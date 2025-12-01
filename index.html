@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Intel Gaming Performance Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      html {
+        scroll-behavior: smooth;
+      }
+      
+      body {
+        font-family: 'Space Grotesk', sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        overflow-x: hidden;
+      }
+      
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      
+      ::-webkit-scrollbar-track {
+        background: rgba(15, 10, 30, 0.5);
+      }
+      
+      ::-webkit-scrollbar-thumb {
+        background: rgba(139, 92, 246, 0.4);
+        border-radius: 4px;
+      }
+      
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(139, 92, 246, 0.6);
+      }
+      
+      /* Smooth transitions for all interactive elements */
+      button, a, input, .card {
+        transition: all 0.2s ease-out;
+      }
+      
+      /* Responsive breakpoints helper classes */
+      @media (max-width: 1400px) {
+        .hide-xl { display: none !important; }
+      }
+      
+      @media (max-width: 1200px) {
+        .hide-lg { display: none !important; }
+      }
+      
+      @media (max-width: 992px) {
+        .hide-md { display: none !important; }
+      }
+      
+      @media (max-width: 768px) {
+        .hide-sm { display: none !important; }
+      }
+      
+      @media (max-width: 576px) {
+        .hide-xs { display: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
