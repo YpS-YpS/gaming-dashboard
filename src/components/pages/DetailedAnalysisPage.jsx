@@ -21,6 +21,7 @@ import {
 } from '../../utils';
 import { TrendTooltip, CpuResidencyTooltip, PerformanceCapabilityTooltip, PowerAnalysisTooltip } from '../charts/tooltips';
 import DeltaBadge from '../common/DeltaBadge';
+import GameImage from '../common/GameImage';
 
 // Config Section Component
 const ConfigSection = ({ title, icon: Icon, children }) => (
@@ -108,19 +109,12 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
         }} />
         <div style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '24px' }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '16px',
-              background: `linear-gradient(135deg, ${program?.color || '#a855f7'}40, rgba(30, 20, 60, 0.9))`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '40px',
-              border: `2px solid ${program?.color || '#a855f7'}50`
-            }}>
-              {game.image}
-            </div>
+            <GameImage 
+              game={game} 
+              size={80} 
+              borderRadius={16}
+              style={{ border: `2px solid ${program?.color || '#a855f7'}50` }}
+            />
             <div>
               <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 700, color: '#f1f5f9', marginBottom: '8px' }}>
                 {game.name}

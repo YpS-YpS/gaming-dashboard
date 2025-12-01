@@ -1,3 +1,3 @@
 export { programs } from './programs';
 export { builds } from './builds';
-export { games } from './games';
+export { games, getSteamImageUrl } from './games';

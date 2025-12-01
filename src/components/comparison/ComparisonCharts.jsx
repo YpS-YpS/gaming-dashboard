@@ -72,8 +72,8 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
     rightPackage: rightTempData.data[i]?.package || 0
   }));
 
-  const leftLabel = `${leftSelection.game.image} ${leftSelection.sku.name}`;
-  const rightLabel = `${rightSelection.game.image} ${rightSelection.sku.name}`;
+  const leftLabel = `${leftSelection.game.name} (${leftSelection.sku.name})`;
+  const rightLabel = `${rightSelection.game.name} (${rightSelection.sku.name})`;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

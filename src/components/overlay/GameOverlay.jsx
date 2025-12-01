@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, X, Gamepad2 } from 'lucide-react';
 import { programs } from '../../data';
 import { getFpsColor, generateGameMetricsForBuild, getBuildTrend } from '../../utils';
+import GameImage from '../common/GameImage';
 import DetailedAnalysisPage from '../pages/DetailedAnalysisPage';
 
 const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, selectedSku, selectedBuild }) => {
@@ -135,7 +136,7 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
                 onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)'; }}
                 onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
               >
-                <span style={{ fontSize: '22px', flexShrink: 0 }}>{g.image}</span>
+                <GameImage game={g} size={36} borderRadius={8} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
                     fontSize: '14px',

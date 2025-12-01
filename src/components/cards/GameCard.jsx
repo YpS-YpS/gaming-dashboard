@@ -5,6 +5,7 @@ import { getFpsColor, generateFrameTimeData, generateFrequencyData, generateTemp
 import TrendSparkline from '../charts/TrendSparkline';
 import { CustomTooltip, TrendTooltip } from '../charts/tooltips';
 import DeltaBadge from '../common/DeltaBadge';
+import GameImage from '../common/GameImage';
 import MetricCard from './MetricCard';
 
 const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, onOpenDetail }) => {
@@ -36,20 +37,7 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-          <div style={{
-            width: '48px',
-            height: '48px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(30, 20, 60, 0.8))',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '24px',
-            border: '1px solid rgba(139, 92, 246, 0.2)',
-            flexShrink: 0
-          }}>
-            {game.image}
-          </div>
+          <GameImage game={game} size={48} borderRadius={12} />
           <div style={{ minWidth: '200px' }}>
             <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: '#f1f5f9' }}>
               {game.name}

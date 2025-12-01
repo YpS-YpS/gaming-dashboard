@@ -5,6 +5,7 @@ import { generateGameMetricsForBuild } from '../../utils';
 import ComparisonSelector from './ComparisonSelector';
 import ComparisonMetrics from './ComparisonMetrics';
 import ComparisonCharts from './ComparisonCharts';
+import GameImage from '../common/GameImage';
 
 const ComparisonPage = () => {
   const [leftSelection, setLeftSelection] = useState({
@@ -177,7 +178,7 @@ const ComparisonPage = () => {
           border: '1px solid rgba(6, 182, 212, 0.3)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ fontSize: '48px' }}>{leftSelection.game.image}</span>
+            <GameImage game={leftSelection.game} size={64} borderRadius={12} />
             <div style={{ flex: 1 }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#f1f5f9' }}>
                 {leftSelection.game.name}
@@ -205,7 +206,7 @@ const ComparisonPage = () => {
           border: '1px solid rgba(236, 72, 153, 0.3)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <span style={{ fontSize: '48px' }}>{rightSelection.game.image}</span>
+            <GameImage game={rightSelection.game} size={64} borderRadius={12} />
             <div style={{ flex: 1 }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#f1f5f9' }}>
                 {rightSelection.game.name}

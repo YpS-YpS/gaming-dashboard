@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, Gamepad2, Cpu, GitBranch } from 'lucide-react';
-import { programs, builds, games } from '../../data';
+import { programs, builds, games, getSteamImageUrl } from '../../data';
 
 const Dropdown = ({ label, icon: Icon, value, options, onChange, renderOption, color = '#a855f7' }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -191,7 +191,7 @@ const ComparisonSelector = ({ side, selection, onChange, color }) => {
           value={game}
           options={games}
           onChange={handleGameChange}
-          renderOption={(g) => `${g.image} ${g.name}`}
+          renderOption={(g) => g.name}
           color={color}
         />
       </div>
@@ -203,12 +203,41 @@ const ComparisonSelector = ({ side, selection, onChange, color }) => {
         background: 'rgba(0, 0, 0, 0.3)',
         borderRadius: '10px'
       }}>
-        <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Selected</div>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: '#f1f5f9' }}>
-          {game.name}
-        </div>
-        <div style={{ fontSize: '13px', color: '#94a3b8' }}>
-          {sku.name} · Build {build}
+        <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Selected</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {game.steamId ? (
+            <img
+              src={getSteamImageUrl(game.steamId, 'header')}
+              alt={game.name}
+              style={{
+                width: '60px',
+                height: '28px',
+                borderRadius: '6px',
+                objectFit: 'cover'
+              }}
+            />
+          ) : (
+            <div style={{
+              width: '60px',
+              height: '28px',
+              borderRadius: '6px',
+              background: 'rgba(139, 92, 246, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px'
+            }}>
+              {game.fallback || '🎮'}
+            </div>
+          )}
+          <div>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: '#f1f5f9' }}>
+              {game.name}
+            </div>
+            <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+              {sku.name} · Build {build}
+            </div>
+          </div>
         </div>
       </div>
     </div>
