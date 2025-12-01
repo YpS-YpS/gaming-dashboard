@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Gauge, Search, ArrowLeft, ArrowUpAZ, ArrowDownAZ, TrendingUp, TrendingDown } from 'lucide-react';
+import { ChevronRight, Gauge, Search, ArrowLeft, ArrowUpAZ, ArrowDownAZ, TrendingUp, TrendingDown, ArrowLeftRight } from 'lucide-react';
 import { programs, builds, games } from './data';
 import { generateGameMetricsForBuild, getBuildTrend } from './utils';
 import { GameCard, SKUCard } from './components/cards';
 import LandingPage from './components/pages/LandingPage';
 import GameOverlay from './components/overlay/GameOverlay';
+import { ComparisonPage } from './components/comparison';
 
 export default function GamingDashboard() {
   const [currentView, setCurrentView] = useState('landing');
@@ -266,6 +267,58 @@ export default function GamingDashboard() {
             </nav>
           </div>
 
+          {/* Compare Mode */}
+          <div style={{ marginBottom: '24px' }}>
+            {!sidebarCollapsed && (
+              <h2 style={{
+                fontSize: '12px',
+                color: '#64748b',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                marginBottom: '12px',
+                paddingLeft: '8px'
+              }}>
+                Tools
+              </h2>
+            )}
+            <button
+              onClick={() => setCurrentView('compare')}
+              title={sidebarCollapsed ? 'Compare Configurations' : ''}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: sidebarCollapsed ? '12px 8px' : '12px',
+                borderRadius: '12px',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                background: currentView === 'compare'
+                  ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(236, 72, 153, 0.2))'
+                  : 'transparent',
+                borderLeft: currentView === 'compare'
+                  ? '3px solid #ec4899'
+                  : '3px solid transparent',
+                justifyContent: sidebarCollapsed ? 'center' : 'flex-start'
+              }}
+            >
+              <ArrowLeftRight size={20} style={{ color: currentView === 'compare' ? '#ec4899' : '#64748b' }} />
+              {!sidebarCollapsed && (
+                <div style={{ textAlign: 'left', flex: 1 }}>
+                  <div style={{
+                    fontSize: '16px',
+                    fontWeight: 500,
+                    color: currentView === 'compare' ? '#f1f5f9' : '#94a3b8'
+                  }}>
+                    Compare
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Any vs Any</div>
+                </div>
+              )}
+            </button>
+          </div>
+
           {/* Build Version */}
           {currentView === 'detail' && !sidebarCollapsed && (
             <div style={{ marginBottom: '24px' }}>
@@ -353,6 +406,8 @@ export default function GamingDashboard() {
         <main style={{ flex: 1, height: '100vh', overflowY: 'auto', overflowX: 'hidden', scrollBehavior: 'smooth' }}>
           {currentView === 'landing' ? (
             <LandingPage onNavigate={handleNavigateToDetail} />
+          ) : currentView === 'compare' ? (
+            <ComparisonPage />
           ) : (
             <div style={{ padding: '32px' }}>
               {/* Header */}
