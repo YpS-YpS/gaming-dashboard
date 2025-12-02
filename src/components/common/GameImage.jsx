@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getSteamImageUrl } from '../../data';
+import { getGameImageUrl } from '../../data';
 
 const GameImage = ({ 
   game, 
@@ -12,8 +12,8 @@ const GameImage = ({
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   
-  const steamUrl = game.steamId ? getSteamImageUrl(game.steamId, type) : null;
-  const hasSteamImage = steamUrl && !imageError;
+  const imageUrl = getGameImageUrl(game, type);
+  const hasImage = imageUrl && !imageError;
   
   // Calculate aspect ratio based on type
   const getAspectRatio = () => {
@@ -47,15 +47,15 @@ const GameImage = ({
       flexShrink: 0,
       ...style
     }}>
-      {game.fallback || '🎮'}
+      🎮
     </div>
   );
 
-  if (!hasSteamImage && showFallback) {
+  if (!hasImage && showFallback) {
     return <FallbackEmoji />;
   }
 
-  if (!hasSteamImage) {
+  if (!hasImage) {
     return null;
   }
 
@@ -92,7 +92,7 @@ const GameImage = ({
       )}
       
       <img
-        src={steamUrl}
+        src={imageUrl}
         alt={game.name}
         onLoad={() => setImageLoaded(true)}
         onError={() => setImageError(true)}
@@ -120,9 +120,9 @@ export const GameHeaderImage = ({ game, height = 80, style = {} }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   
-  const steamUrl = game.steamId ? getSteamImageUrl(game.steamId, 'header') : null;
+  const imageUrl = getGameImageUrl(game, 'header');
   
-  if (!steamUrl || imageError) {
+  if (!imageUrl || imageError) {
     return (
       <div style={{
         width: height * 2.14,
@@ -136,7 +136,7 @@ export const GameHeaderImage = ({ game, height = 80, style = {} }) => {
         border: '1px solid rgba(139, 92, 246, 0.2)',
         ...style
       }}>
-        {game.fallback || '🎮'}
+        🎮
       </div>
     );
   }
@@ -153,7 +153,7 @@ export const GameHeaderImage = ({ game, height = 80, style = {} }) => {
       ...style
     }}>
       <img
-        src={steamUrl}
+        src={imageUrl}
         alt={game.name}
         onLoad={() => setImageLoaded(true)}
         onError={() => setImageError(true)}
