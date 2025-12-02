@@ -115,6 +115,7 @@ dist
 
 # Serverless directories
 .serverless/
+.vite/
 
 # FuseBox cache
 .fusebox/
