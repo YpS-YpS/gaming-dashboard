@@ -35,54 +35,72 @@ export const generateDetailedFrameTimeData = (seed) => {
   return data;
 };
 
-// CPU Residency data (C-state residency over time)
+// CPU Residency data - scatter plot with trend line (time in ms)
 export const generateCpuResidencyData = (seed) => {
   const data = [];
-  for (let t = 0; t < 600; t += 10) {
+  for (let t = 0; t < 60; t++) {
+    const time = t * 1000; // Time in milliseconds (0, 1000, 2000... 59000)
     const baseResidency = 12 + seededRandom(seed + t) * 6;
     const spike = seededRandom(seed + t + 500) > 0.92 ? seededRandom(seed + t + 600) * 10 : 0;
-    data.push({
-      time: t * 100,
-      residency: parseFloat((baseResidency + spike + (seededRandom(seed + t + 100) - 0.5) * 4).toFixed(1)),
-      trendLine: parseFloat((13 + Math.sin(t / 100) * 2).toFixed(1))
-    });
+    const residency = parseFloat((baseResidency + spike + (seededRandom(seed + t + 100) - 0.5) * 4).toFixed(1));
+    const trendLine = parseFloat((13 + Math.sin(t / 15) * 3 - t * 0.05).toFixed(1)); // Slight downward trend
+    
+    data.push({ time, residency, trendLine });
   }
   return data;
 };
 
-// Performance Capability / P-state data
+// Performance Capability & C-State data - line chart with scatter points
 export const generatePerformanceCapabilityData = (seed) => {
   const data = [];
-  for (let t = 0; t < 600; t += 10) {
-    const base = 100 + seededRandom(seed + t) * 10;
-    data.push({
-      time: t * 100,
-      capability: Math.round(base + (seededRandom(seed + t + 200) - 0.5) * 15),
-      c0Active: Math.round(85 + seededRandom(seed + t + 300) * 25),
-      c1: Math.round(60 + seededRandom(seed + t + 400) * 10),
-      c6: Math.round(55 + seededRandom(seed + t + 500) * 15)
-    });
+  for (let t = 0; t < 60; t++) {
+    const time = t * 1000; // Time in milliseconds
+    
+    // Capability line (ranges ~95-115)
+    const capability = Math.round(100 + seededRandom(seed + t) * 10 + (seededRandom(seed + t + 50) - 0.5) * 15);
+    
+    // C0 Active scatter points (ranges ~85-95)
+    const c0Active = Math.round(88 + seededRandom(seed + t + 100) * 8);
+    
+    // C1 scatter points (ranges ~55-70)
+    const c1 = Math.round(60 + seededRandom(seed + t + 200) * 12);
+    
+    // C6 scatter points (ranges ~55-70)
+    const c6 = Math.round(58 + seededRandom(seed + t + 300) * 15);
+    
+    data.push({ time, capability, c0Active, c1, c6 });
   }
   return data;
 };
 
 // IA Clip Reason data
 export const generateClipReasonData = (seed) => {
+  const reasons = ['MAX_TURBO', 'PBM_PL1', 'PL1;MAX_TURBO', 'PBM_PL2', 'PL2;MAX_TURBO', 'THERMAL'];
   const data = [];
-  for (let t = 0; t < 600; t += 10) {
-    const time = t * 100;
+  
+  for (let t = 0; t < 60; t++) {
+    const time = t * 1000; // Time in milliseconds (0 to 59000)
     const rand = seededRandom(seed + t);
-    if (rand < 0.6) data.push({ time, reason: 'MAX_TURBO_LIMIT', y: 1 });
-    if (rand > 0.3 && rand < 0.5 && seededRandom(seed + t + 100) > 0.7) data.push({ time, reason: 'PBM_PL1', y: 2 });
-    if (rand > 0.7 && rand < 0.85) data.push({ time, reason: 'PBM_PL1;MAX_TURBO_LIMIT', y: 3 });
-    if (rand > 0.85 && rand < 0.92) data.push({ time, reason: 'PBM_PL2', y: 4 });
-    if (rand > 0.92 && rand < 0.97) data.push({ time, reason: 'PBM_PL2;MAX_TURBO_LIMIT', y: 5 });
-    if (rand > 0.97) data.push({ time, reason: 'THERMAL', y: 6 });
+    
+    // MAX_TURBO - most common (cyan)
+    if (rand < 0.55) data.push({ time, reason: 'MAX_TURBO' });
+    
+    // PBM_PL1 - frequent (orange)
+    if (rand > 0.25 && rand < 0.45 && seededRandom(seed + t + 100) > 0.6) data.push({ time, reason: 'PBM_PL1' });
+    
+    // PL1;MAX_TURBO - occasional (yellow)
+    if (rand > 0.6 && rand < 0.75) data.push({ time, reason: 'PL1;MAX_TURBO' });
+    
+    // PBM_PL2 - less common (red/pink)
+    if (rand > 0.8 && rand < 0.9) data.push({ time, reason: 'PBM_PL2' });
+    
+    // PL2;MAX_TURBO - rare (pink)
+    if (rand > 0.9 && rand < 0.96) data.push({ time, reason: 'PL2;MAX_TURBO' });
+    
+    // THERMAL - very rare (purple)
+    if (rand > 0.97) data.push({ time, reason: 'THERMAL' });
   }
-  return {
-    data,
-    reasons: ['MAX_TURBO_LIMIT', 'PBM_PL1', 'PBM_PL1;MAX_TURBO_LIMIT', 'PBM_PL2', 'PBM_PL2;MAX_TURBO_LIMIT', 'THERMAL']
-  };
+  return { data, reasons };
 };
 
 // Per-Core Temperature data

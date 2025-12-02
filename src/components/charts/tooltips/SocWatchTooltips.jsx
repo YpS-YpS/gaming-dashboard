@@ -35,8 +35,8 @@ export const PerformanceCapabilityTooltip = ({ active, payload }) => {
   const colorMap = {
     'Capability': '#10b981',
     'C0 Active': '#06b6d4',
-    'C1': '#8b5cf6',
-    'C6': '#f59e0b'
+    'C1': '#f59e0b',
+    'C6': '#8b5cf6'
   };
   const time = payload[0].payload.time;
   

@@ -28,10 +28,10 @@ export const tempCoreColors = [
 
 // Clip reason colors for IA Clip visualization
 export const clipReasonColors = {
-  'MAX_TURBO_LIMIT': '#06b6d4',
-  'PBM_PL1': '#f59e0b',
-  'PBM_PL1;MAX_TURBO_LIMIT': '#ec4899',
-  'PBM_PL2': '#ef4444',
-  'PBM_PL2;MAX_TURBO_LIMIT': '#dc2626',
-  'THERMAL': '#7c3aed'
+  'MAX_TURBO': '#06b6d4',        // Cyan
+  'PBM_PL1': '#f59e0b',          // Orange
+  'PL1;MAX_TURBO': '#fbbf24',    // Yellow/Gold
+  'PBM_PL2': '#ef4444',          // Red
+  'PL2;MAX_TURBO': '#ec4899',    // Pink
+  'THERMAL': '#8b5cf6'           // Purple
 };
