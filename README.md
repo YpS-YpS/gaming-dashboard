@@ -2,7 +2,7 @@
 
 A high-performance, React-based dashboard for tracking and analyzing gaming performance metrics across Intel CPU programs (Arrow Lake, Nova Lake, Panther Lake).
 
-![Dashboard Preview](https://via.placeholder.com/800x400?text=Intel+Gaming+Dashboard+Preview)
+![Dashboard Preview](docs/images/dashboard-preview.png)
 
 ## 🚀 Key Features
 
