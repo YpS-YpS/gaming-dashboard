@@ -18,45 +18,32 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
   );
 
   return (
-    <div style={{
-      background: isExpanded ? 'rgba(30, 20, 60, 0.8)' : 'rgba(20, 15, 45, 0.6)',
-      borderRadius: '16px',
-      border: isExpanded ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid rgba(139, 92, 246, 0.1)',
-      overflow: 'hidden',
-      transition: 'all 0.3s ease'
-    }}>
+    <div className={`
+      rounded-2xl overflow-hidden transition-all duration-300
+      ${isExpanded
+        ? 'bg-[#1e143c]/80 border border-primary/40'
+        : 'bg-[#140f2d]/60 border border-primary/10'}
+    `}>
       {/* Header Row */}
       <div
         onClick={onToggle}
-        style={{
-          padding: '16px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          cursor: 'pointer'
-        }}
+        className="p-6 flex items-center justify-between cursor-pointer"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+        <div className="flex items-center gap-4 flex-1">
           <GameImage game={game} size={48} borderRadius={12} />
-          <div style={{ minWidth: '200px' }}>
-            <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 600, color: '#f1f5f9' }}>
+          <div className="min-w-[200px]">
+            <h3 className="m-0 text-[17px] font-semibold text-slate-50">
               {game.name}
             </h3>
-            <span style={{ fontSize: '14px', color: '#64748b' }}>{game.genre}</span>
+            <span className="text-sm text-slate-500">{game.genre}</span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
+        <div className="flex items-center gap-8">
           {/* Trend */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{
-                fontSize: '11px',
-                color: '#64748b',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                marginBottom: '2px'
-              }}>
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-[11px] text-slate-500 uppercase tracking-wider mb-0.5">
                 Last 4 Builds
               </div>
               <TrendSparkline data={trendData} delta={delta} />
@@ -64,27 +51,27 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
             <DeltaBadge delta={delta} deltaPercent={deltaPercent} />
           </div>
 
-          <div style={{ width: '1px', height: '40px', background: 'rgba(139, 92, 246, 0.2)' }} />
+          <div className="w-px h-10 bg-primary/20" />
 
           {/* FPS Metrics */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
-            <div style={{ textAlign: 'center', minWidth: '50px' }}>
-              <div style={{ fontSize: '28px', fontWeight: 700, color: getFpsColor(metrics.avgFps) }}>
+          <div className="flex items-center gap-8">
+            <div className="text-center min-w-[50px]">
+              <div className="text-3xl font-bold" style={{ color: getFpsColor(metrics.avgFps) }}>
                 {metrics.avgFps}
               </div>
-              <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>Avg</div>
+              <div className="text-[11px] text-slate-500 uppercase">Avg</div>
             </div>
-            <div style={{ textAlign: 'center', minWidth: '50px' }}>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: getFpsColor(metrics.onePercentLow) }}>
+            <div className="text-center min-w-[50px]">
+              <div className="text-2xl font-semibold" style={{ color: getFpsColor(metrics.onePercentLow) }}>
                 {metrics.onePercentLow}
               </div>
-              <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>1% Low</div>
+              <div className="text-[11px] text-slate-500 uppercase">1% Low</div>
             </div>
-            <div style={{ textAlign: 'center', minWidth: '50px' }}>
-              <div style={{ fontSize: '24px', fontWeight: 600, color: getFpsColor(metrics.pointOnePercentLow) }}>
+            <div className="text-center min-w-[50px]">
+              <div className="text-2xl font-semibold" style={{ color: getFpsColor(metrics.pointOnePercentLow) }}>
                 {metrics.pointOnePercentLow}
               </div>
-              <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase' }}>0.1% Low</div>
+              <div className="text-[11px] text-slate-500 uppercase">0.1% Low</div>
             </div>
           </div>
 
@@ -92,65 +79,36 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
           <button
             onClick={(e) => { e.stopPropagation(); onOpenDetail(game); }}
             title="Open detailed analysis"
-            style={{
-              padding: '8px',
-              borderRadius: '8px',
-              border: 'none',
-              background: 'rgba(139, 92, 246, 0.15)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s'
-            }}
+            className="p-2 rounded-lg border-none bg-primary/15 cursor-pointer flex items-center justify-center transition-all hover:bg-primary/25"
           >
-            <Activity size={18} style={{ color: '#a855f7' }} />
+            <Activity size={18} className="text-primary" />
           </button>
 
           <ChevronDown
             size={20}
-            style={{
-              color: '#64748b',
-              transition: 'transform 0.3s ease',
-              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
-            }}
+            className={`text-slate-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}
           />
         </div>
       </div>
 
       {/* Expanded Content */}
       {isExpanded && (
-        <div style={{ padding: '0 24px 24px' }}>
-          <div style={{
-            height: '1px',
-            background: 'linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.3), transparent)',
-            marginBottom: '20px'
-          }} />
+        <div className="px-6 pb-6">
+          <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent mb-5" />
 
           {/* Build Trend Chart */}
-          <div style={{
-            background: 'rgba(15, 10, 35, 0.7)',
-            borderRadius: '12px',
-            padding: '16px',
-            border: '1px solid rgba(139, 92, 246, 0.1)',
-            marginBottom: '16px'
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '12px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Activity size={14} style={{ color: '#a855f7' }} />
-                <span style={{ fontSize: '15px', fontWeight: 500, color: '#e2e8f0' }}>
+          <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10 mb-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Activity size={14} className="text-primary" />
+                <span className="text-[15px] font-medium text-slate-200">
                   Build-over-Build Trend
                 </span>
               </div>
               <DeltaBadge delta={delta} deltaPercent={deltaPercent} />
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-              <div style={{ flex: 1, height: '60px' }}>
+            <div className="flex items-center gap-6">
+              <div className="flex-1 h-[60px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={trendData}>
                     <defs>
@@ -173,17 +131,13 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
-              <div style={{ display: 'flex', gap: '16px' }}>
+              <div className="flex gap-4">
                 {trendData.map((d, i) => (
-                  <div key={d.build} style={{ textAlign: 'center' }}>
-                    <div style={{
-                      fontSize: '18px',
-                      fontWeight: 600,
-                      color: i === trendData.length - 1 ? (delta >= 0 ? '#10b981' : '#ef4444') : '#94a3b8'
-                    }}>
+                  <div key={d.build} className="text-center">
+                    <div className={`text-lg font-semibold ${i === trendData.length - 1 ? (delta >= 0 ? 'text-emerald-500' : 'text-red-500') : 'text-slate-400'}`}>
                       {d.avgFps}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#64748b' }}>{d.build}</div>
+                    <div className="text-[11px] text-slate-500">{d.build}</div>
                   </div>
                 ))}
               </div>
@@ -191,12 +145,7 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
           </div>
 
           {/* Metric Cards */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(6, 1fr)',
-            gap: '12px',
-            marginBottom: '20px'
-          }}>
+          <div className="grid grid-cols-6 gap-3 mb-5">
             <MetricCard label="Max FPS" value={metrics.maxFps} unit="fps" icon={TrendingUp} color="#10b981" />
             <MetricCard label="Min FPS" value={metrics.minFps} unit="fps" icon={TrendingDown} color="#ef4444" />
             <MetricCard label="CPU Usage" value={metrics.avgCpuUsage} unit="%" icon={Cpu} color="#06b6d4" />
@@ -206,22 +155,12 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
           </div>
 
           {/* Mini Charts Row */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '16px',
-            marginBottom: '20px'
-          }}>
+          <div className="grid grid-cols-3 gap-4 mb-5">
             {/* Frame Time */}
-            <div style={{
-              background: 'rgba(15, 10, 35, 0.7)',
-              borderRadius: '12px',
-              padding: '16px',
-              border: '1px solid rgba(139, 92, 246, 0.1)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Clock size={14} style={{ color: '#a855f7' }} />
-                <span style={{ fontSize: '15px', fontWeight: 500, color: '#e2e8f0' }}>Frame Time</span>
+            <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock size={14} className="text-primary" />
+                <span className="text-[15px] font-medium text-slate-200">Frame Time</span>
               </div>
               <ResponsiveContainer width="100%" height={100}>
                 <AreaChart data={frameTimeData}>
@@ -240,15 +179,10 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
             </div>
 
             {/* CPU Frequency */}
-            <div style={{
-              background: 'rgba(15, 10, 35, 0.7)',
-              borderRadius: '12px',
-              padding: '16px',
-              border: '1px solid rgba(139, 92, 246, 0.1)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Activity size={14} style={{ color: '#06b6d4' }} />
-                <span style={{ fontSize: '15px', fontWeight: 500, color: '#e2e8f0' }}>CPU Frequency</span>
+            <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity size={14} className="text-secondary" />
+                <span className="text-[15px] font-medium text-slate-200">CPU Frequency</span>
               </div>
               <ResponsiveContainer width="100%" height={100}>
                 <LineChart data={frequencyData}>
@@ -263,15 +197,10 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
             </div>
 
             {/* Temperature */}
-            <div style={{
-              background: 'rgba(15, 10, 35, 0.7)',
-              borderRadius: '12px',
-              padding: '16px',
-              border: '1px solid rgba(139, 92, 246, 0.1)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Thermometer size={14} style={{ color: '#f43f5e' }} />
-                <span style={{ fontSize: '15px', fontWeight: 500, color: '#e2e8f0' }}>Temperature</span>
+            <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10">
+              <div className="flex items-center gap-2 mb-3">
+                <Thermometer size={14} className="text-rose-500" />
+                <span className="text-[15px] font-medium text-slate-200">Temperature</span>
               </div>
               <ResponsiveContainer width="100%" height={100}>
                 <AreaChart data={tempData}>
@@ -291,128 +220,92 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
           </div>
 
           {/* Detail Cards Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+          <div className="grid grid-cols-4 gap-4">
             {/* P-Core Frequency */}
-            <div style={{
-              background: 'rgba(15, 10, 35, 0.7)',
-              borderRadius: '12px',
-              padding: '16px',
-              border: '1px solid rgba(139, 92, 246, 0.1)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#06b6d4' }} />
-                <span style={{ fontSize: '15px', fontWeight: 500, color: '#e2e8f0' }}>P-Core Frequency</span>
+            <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-secondary" />
+                <span className="text-[15px] font-medium text-slate-200">P-Core Frequency</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Average</span>
-                  <span style={{ fontSize: '15px', fontWeight: 500, color: '#06b6d4' }}>{metrics.avgPCoreMhz} MHz</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Average</span>
+                  <span className="text-[15px] font-medium text-secondary">{metrics.avgPCoreMhz} MHz</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Maximum</span>
-                  <span style={{ fontSize: '15px', fontWeight: 500, color: '#10b981' }}>{metrics.maxPCoreMhz} MHz</span>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Maximum</span>
+                  <span className="text-[15px] font-medium text-emerald-500">{metrics.maxPCoreMhz} MHz</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Minimum</span>
-                  <span style={{ fontSize: '15px', fontWeight: 500, color: '#ef4444' }}>{metrics.minPCoreMhz} MHz</span>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Minimum</span>
+                  <span className="text-[15px] font-medium text-red-500">{metrics.minPCoreMhz} MHz</span>
                 </div>
               </div>
             </div>
 
             {/* E-Core Frequency */}
-            <div style={{
-              background: 'rgba(15, 10, 35, 0.7)',
-              borderRadius: '12px',
-              padding: '16px',
-              border: '1px solid rgba(139, 92, 246, 0.1)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#a855f7' }} />
-                <span style={{ fontSize: '15px', fontWeight: 500, color: '#e2e8f0' }}>E-Core Frequency</span>
+            <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-primary" />
+                <span className="text-[15px] font-medium text-slate-200">E-Core Frequency</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Average</span>
-                  <span style={{ fontSize: '15px', fontWeight: 500, color: '#a855f7' }}>{metrics.avgECoreMhz} MHz</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Average</span>
+                  <span className="text-[15px] font-medium text-primary">{metrics.avgECoreMhz} MHz</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Maximum</span>
-                  <span style={{ fontSize: '15px', fontWeight: 500, color: '#10b981' }}>{metrics.maxECoreMhz} MHz</span>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Maximum</span>
+                  <span className="text-[15px] font-medium text-emerald-500">{metrics.maxECoreMhz} MHz</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Minimum</span>
-                  <span style={{ fontSize: '15px', fontWeight: 500, color: '#ef4444' }}>{metrics.minECoreMhz} MHz</span>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Minimum</span>
+                  <span className="text-[15px] font-medium text-red-500">{metrics.minECoreMhz} MHz</span>
                 </div>
               </div>
             </div>
 
             {/* Thermal */}
-            <div style={{
-              background: 'rgba(15, 10, 35, 0.7)',
-              borderRadius: '12px',
-              padding: '16px',
-              border: '1px solid rgba(139, 92, 246, 0.1)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f43f5e' }} />
-                <span style={{ fontSize: '15px', fontWeight: 500, color: '#e2e8f0' }}>Thermal</span>
+            <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-rose-500" />
+                <span className="text-[15px] font-medium text-slate-200">Thermal</span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Avg Package</span>
-                  <span style={{ fontSize: '15px', fontWeight: 500, color: '#f59e0b' }}>{metrics.avgPackageTemp}°C</span>
+              <div className="flex flex-col gap-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Avg Package</span>
+                  <span className="text-[15px] font-medium text-amber-500">{metrics.avgPackageTemp}°C</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Max Package</span>
-                  <span style={{ fontSize: '15px', fontWeight: 500, color: '#f43f5e' }}>{metrics.maxPackageTemp}°C</span>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Max Package</span>
+                  <span className="text-[15px] font-medium text-rose-500">{metrics.maxPackageTemp}°C</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '14px', color: '#64748b' }}>Headroom</span>
-                  <span style={{ fontSize: '15px', fontWeight: 500, color: '#10b981' }}>{100 - metrics.maxPackageTemp}°C</span>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Headroom</span>
+                  <span className="text-[15px] font-medium text-emerald-500">{100 - metrics.maxPackageTemp}°C</span>
                 </div>
               </div>
             </div>
 
             {/* Throttling */}
-            <div style={{
-              background: 'rgba(15, 10, 35, 0.7)',
-              borderRadius: '12px',
-              padding: '16px',
-              border: '1px solid rgba(139, 92, 246, 0.1)'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <AlertTriangle size={14} style={{ color: '#f59e0b' }} />
-                <span style={{ fontSize: '15px', fontWeight: 500, color: '#e2e8f0' }}>Throttling</span>
+            <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle size={14} className="text-amber-500" />
+                <span className="text-[15px] font-medium text-slate-200">Throttling</span>
               </div>
               {metrics.throttling.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div className="flex flex-col gap-2">
                   {metrics.throttling.map((reason, i) => (
-                    <div key={i} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '6px 10px',
-                      borderRadius: '8px',
-                      background: 'rgba(245, 158, 11, 0.1)',
-                      border: '1px solid rgba(245, 158, 11, 0.2)'
-                    }}>
-                      <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#f59e0b' }} />
-                      <span style={{ fontSize: '14px', color: '#f59e0b' }}>{reason}</span>
+                    <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                      <span className="text-sm text-amber-500">{reason}</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '6px 10px',
-                  borderRadius: '8px',
-                  background: 'rgba(16, 185, 129, 0.1)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)'
-                }}>
-                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }} />
-                  <span style={{ fontSize: '14px', color: '#10b981' }}>No throttling detected</span>
+                <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span className="text-sm text-emerald-500">No throttling detected</span>
                 </div>
               )}
             </div>

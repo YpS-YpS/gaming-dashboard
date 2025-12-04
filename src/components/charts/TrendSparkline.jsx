@@ -6,9 +6,9 @@ const TrendSparkline = ({ data, delta }) => {
   const minFps = Math.min(...data.map(d => d.avgFps));
   const maxFps = Math.max(...data.map(d => d.avgFps));
   const color = delta >= 0 ? '#10b981' : '#ef4444';
-  
+
   return (
-    <div style={{ width: '80px', height: '32px' }}>
+    <div className="w-20 h-8">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
           <YAxis domain={[minFps - 5, maxFps + 5]} hide />

@@ -11,20 +11,10 @@ import {
 } from '../../utils';
 
 const ChartSection = ({ title, icon: Icon, children, color = '#a855f7' }) => (
-  <div style={{
-    background: 'rgba(15, 10, 35, 0.7)',
-    borderRadius: '16px',
-    padding: '20px',
-    border: '1px solid rgba(139, 92, 246, 0.15)'
-  }}>
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px',
-      marginBottom: '16px'
-    }}>
+  <div className="bg-[#0f0a23]/70 rounded-2xl p-5 border border-primary/15">
+    <div className="flex items-center gap-2.5 mb-4">
       <Icon size={18} style={{ color }} />
-      <span style={{ fontSize: '16px', fontWeight: 600, color: '#f1f5f9' }}>{title}</span>
+      <span className="text-base font-semibold text-slate-50">{title}</span>
     </div>
     {children}
   </div>
@@ -76,22 +66,17 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
   const rightLabel = `${rightSelection.game.name} (${rightSelection.sku.name})`;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="flex flex-col gap-5">
       {/* Frame Time Overlay */}
       <ChartSection title="Frame Time Comparison" icon={Clock} color="#a855f7">
-        <div style={{
-          display: 'flex',
-          gap: '16px',
-          marginBottom: '12px',
-          fontSize: '13px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '12px', height: '3px', background: '#06b6d4', borderRadius: '2px' }} />
-            <span style={{ color: '#94a3b8' }}>{leftLabel}</span>
+        <div className="flex gap-4 mb-3 text-[13px]">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-0.5 bg-[#06b6d4] rounded-full" />
+            <span className="text-slate-400">{leftLabel}</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '12px', height: '3px', background: '#ec4899', borderRadius: '2px' }} />
-            <span style={{ color: '#94a3b8' }}>{rightLabel}</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-0.5 bg-[#ec4899] rounded-full" />
+            <span className="text-slate-400">{rightLabel}</span>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={200}>
@@ -111,17 +96,12 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
             <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={[0, 'auto']} />
             <Tooltip
               content={({ active, payload, label }) => active && payload?.length ? (
-                <div style={{
-                  background: 'rgba(15, 10, 40, 0.95)',
-                  border: '1px solid rgba(139, 92, 246, 0.3)',
-                  borderRadius: '8px',
-                  padding: '12px 16px'
-                }}>
-                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Frame {label}</p>
-                  <p style={{ fontSize: '13px', color: '#06b6d4', margin: '2px 0', fontWeight: 500 }}>
+                <div className="bg-[#0f0a28]/95 border border-primary/30 rounded-lg p-3 px-4">
+                  <p className="text-xs text-slate-500 mb-2">Frame {label}</p>
+                  <p className="text-[13px] text-[#06b6d4] font-medium my-0.5">
                     Left: {payload[0]?.value?.toFixed(2)} ms
                   </p>
-                  <p style={{ fontSize: '13px', color: '#ec4899', margin: '2px 0', fontWeight: 500 }}>
+                  <p className="text-[13px] text-[#ec4899] font-medium my-0.5">
                     Right: {payload[1]?.value?.toFixed(2)} ms
                   </p>
                 </div>
@@ -134,7 +114,7 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
       </ChartSection>
 
       {/* Side by Side FPS */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div className="grid grid-cols-2 gap-4">
         <ChartSection title={`FPS - ${leftLabel}`} icon={Activity} color="#06b6d4">
           <ResponsiveContainer width="100%" height={150}>
             <AreaChart data={leftFrameTimeData}>
@@ -148,8 +128,8 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
               <XAxis dataKey="frame" hide />
               <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
               <Tooltip content={({ active, payload }) => active && payload?.length ? (
-                <div style={{ background: 'rgba(15, 10, 40, 0.95)', border: '1px solid #06b6d4', borderRadius: '6px', padding: '8px 12px' }}>
-                  <span style={{ color: '#06b6d4', fontWeight: 600 }}>{payload[0]?.value?.toFixed(1)} FPS</span>
+                <div className="bg-[#0f0a28]/95 border border-[#06b6d4] rounded-md p-2 px-3">
+                  <span className="text-[#06b6d4] font-semibold">{payload[0]?.value?.toFixed(1)} FPS</span>
                 </div>
               ) : null} />
               <Area type="monotone" dataKey="fps" stroke="#06b6d4" strokeWidth={2} fill="url(#leftFpsGrad)" dot={false} />
@@ -170,8 +150,8 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
               <XAxis dataKey="frame" hide />
               <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
               <Tooltip content={({ active, payload }) => active && payload?.length ? (
-                <div style={{ background: 'rgba(15, 10, 40, 0.95)', border: '1px solid #ec4899', borderRadius: '6px', padding: '8px 12px' }}>
-                  <span style={{ color: '#ec4899', fontWeight: 600 }}>{payload[0]?.value?.toFixed(1)} FPS</span>
+                <div className="bg-[#0f0a28]/95 border border-[#ec4899] rounded-md p-2 px-3">
+                  <span className="text-[#ec4899] font-semibold">{payload[0]?.value?.toFixed(1)} FPS</span>
                 </div>
               ) : null} />
               <Area type="monotone" dataKey="fps" stroke="#ec4899" strokeWidth={2} fill="url(#rightFpsGrad)" dot={false} />
@@ -182,28 +162,22 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
 
       {/* Power Comparison */}
       <ChartSection title="Power Comparison" icon={Zap} color="#f59e0b">
-        <div style={{
-          display: 'flex',
-          gap: '16px',
-          marginBottom: '12px',
-          fontSize: '13px',
-          flexWrap: 'wrap'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '12px', height: '3px', background: '#06b6d4', borderRadius: '2px' }} />
-            <span style={{ color: '#94a3b8' }}>Left IA Power</span>
+        <div className="flex flex-wrap gap-4 mb-3 text-[13px]">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-0.5 bg-[#06b6d4] rounded-full" />
+            <span className="text-slate-400">Left IA Power</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '12px', height: '3px', background: '#0891b2', borderRadius: '2px' }} />
-            <span style={{ color: '#94a3b8' }}>Left Package</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-0.5 bg-[#0891b2] rounded-full" />
+            <span className="text-slate-400">Left Package</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '12px', height: '3px', background: '#ec4899', borderRadius: '2px' }} />
-            <span style={{ color: '#94a3b8' }}>Right IA Power</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-0.5 bg-[#ec4899] rounded-full" />
+            <span className="text-slate-400">Right IA Power</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <div style={{ width: '12px', height: '3px', background: '#be185d', borderRadius: '2px' }} />
-            <span style={{ color: '#94a3b8' }}>Right Package</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-0.5 bg-[#be185d] rounded-full" />
+            <span className="text-slate-400">Right Package</span>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={200}>
@@ -213,15 +187,10 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
             <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={[0, 'auto']} />
             <Tooltip
               content={({ active, payload, label }) => active && payload?.length ? (
-                <div style={{
-                  background: 'rgba(15, 10, 40, 0.95)',
-                  border: '1px solid rgba(245, 158, 11, 0.5)',
-                  borderRadius: '8px',
-                  padding: '12px 16px'
-                }}>
-                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Time: {label}s</p>
+                <div className="bg-[#0f0a28]/95 border border-amber-500/50 rounded-lg p-3 px-4">
+                  <p className="text-xs text-slate-500 mb-2">Time: {label}s</p>
                   {payload.map((entry, i) => (
-                    <p key={i} style={{ fontSize: '12px', color: entry.color, margin: '2px 0' }}>
+                    <p key={i} className="text-xs my-0.5" style={{ color: entry.color }}>
                       {entry.name}: {entry.value?.toFixed(1)} W
                     </p>
                   ))}
@@ -255,15 +224,10 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
             <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={[50, 100]} />
             <Tooltip
               content={({ active, payload, label }) => active && payload?.length ? (
-                <div style={{
-                  background: 'rgba(15, 10, 40, 0.95)',
-                  border: '1px solid rgba(244, 63, 94, 0.5)',
-                  borderRadius: '8px',
-                  padding: '12px 16px'
-                }}>
-                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Time: {label}s</p>
-                  <p style={{ fontSize: '13px', color: '#06b6d4', margin: '2px 0' }}>Left: {payload[0]?.value}°C</p>
-                  <p style={{ fontSize: '13px', color: '#ec4899', margin: '2px 0' }}>Right: {payload[1]?.value}°C</p>
+                <div className="bg-[#0f0a28]/95 border border-rose-500/50 rounded-lg p-3 px-4">
+                  <p className="text-xs text-slate-500 mb-2">Time: {label}s</p>
+                  <p className="text-[13px] text-[#06b6d4] my-0.5">Left: {payload[0]?.value}°C</p>
+                  <p className="text-[13px] text-[#ec4899] my-0.5">Right: {payload[1]?.value}°C</p>
                 </div>
               ) : null}
             />
@@ -274,7 +238,7 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
       </ChartSection>
 
       {/* Side by Side Frequency */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div className="grid grid-cols-2 gap-4">
         <ChartSection title={`CPU Frequency - ${leftLabel}`} icon={Cpu} color="#06b6d4">
           <ResponsiveContainer width="100%" height={150}>
             <LineChart data={leftFreqData.data}>
@@ -282,10 +246,10 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
               <XAxis dataKey="time" hide />
               <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} domain={[2500, 6000]} />
               <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
-                <div style={{ background: 'rgba(15, 10, 40, 0.95)', border: '1px solid #06b6d4', borderRadius: '6px', padding: '8px 12px' }}>
-                  <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Time: {label}s</p>
+                <div className="bg-[#0f0a28]/95 border border-[#06b6d4] rounded-md p-2 px-3">
+                  <p className="text-[11px] text-slate-500 mb-1">Time: {label}s</p>
                   {payload.slice(0, 3).map((entry, i) => (
-                    <p key={i} style={{ fontSize: '12px', color: entry.color, margin: '2px 0' }}>{entry.name}: {Math.round(entry.value)} MHz</p>
+                    <p key={i} className="text-xs my-0.5" style={{ color: entry.color }}>{entry.name}: {Math.round(entry.value)} MHz</p>
                   ))}
                 </div>
               ) : null} />
@@ -306,10 +270,10 @@ const ComparisonCharts = ({ leftSelection, rightSelection }) => {
               <XAxis dataKey="time" hide />
               <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} domain={[2500, 6000]} />
               <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
-                <div style={{ background: 'rgba(15, 10, 40, 0.95)', border: '1px solid #ec4899', borderRadius: '6px', padding: '8px 12px' }}>
-                  <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Time: {label}s</p>
+                <div className="bg-[#0f0a28]/95 border border-[#ec4899] rounded-md p-2 px-3">
+                  <p className="text-[11px] text-slate-500 mb-1">Time: {label}s</p>
                   {payload.slice(0, 3).map((entry, i) => (
-                    <p key={i} style={{ fontSize: '12px', color: entry.color, margin: '2px 0' }}>{entry.name}: {Math.round(entry.value)} MHz</p>
+                    <p key={i} className="text-xs my-0.5" style={{ color: entry.color }}>{entry.name}: {Math.round(entry.value)} MHz</p>
                   ))}
                 </div>
               ) : null} />

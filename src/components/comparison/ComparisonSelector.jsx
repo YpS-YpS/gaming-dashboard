@@ -6,86 +6,53 @@ const Dropdown = ({ label, icon: Icon, value, options, onChange, renderOption, c
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div style={{ position: 'relative' }}>
-      <label style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        fontSize: '11px',
-        color: '#64748b',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        marginBottom: '6px'
-      }}>
+    <div className="relative">
+      <label className="flex items-center gap-1.5 text-[11px] text-slate-500 uppercase tracking-wider mb-1.5">
         <Icon size={12} style={{ color }} />
         {label}
       </label>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '10px 12px',
-          borderRadius: '10px',
-          border: `1px solid ${color}30`,
-          background: 'rgba(20, 15, 45, 0.8)',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease'
-        }}
+        className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border bg-[#140f2d]/80 cursor-pointer transition-all duration-200"
+        style={{ borderColor: `${color}30` }}
       >
-        <span style={{ fontSize: '14px', color: '#f1f5f9', fontWeight: 500 }}>
+        <span className="text-sm text-slate-50 font-medium">
           {renderOption ? renderOption(value) : value}
         </span>
         <ChevronDown
           size={16}
-          style={{
-            color: '#64748b',
-            transform: isOpen ? 'rotate(180deg)' : 'rotate(0)',
-            transition: 'transform 0.2s ease'
-          }}
+          className={`text-slate-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : 'rotate-0'}`}
         />
       </button>
       {isOpen && (
         <>
           <div
-            style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+            className="fixed inset-0 z-50"
             onClick={() => setIsOpen(false)}
           />
-          <div style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            marginTop: '4px',
-            background: 'rgba(20, 15, 45, 0.98)',
-            border: `1px solid ${color}30`,
-            borderRadius: '10px',
-            maxHeight: '240px',
-            overflowY: 'auto',
-            zIndex: 101,
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)'
-          }}>
+          <div
+            className="absolute top-full left-0 right-0 mt-1 bg-[#140f2d]/98 border rounded-xl max-h-60 overflow-y-auto z-[51] shadow-2xl"
+            style={{ borderColor: `${color}30` }}
+          >
             {options.map((option, i) => (
               <div
                 key={i}
                 onClick={() => { onChange(option); setIsOpen(false); }}
+                className={`
+                  px-3 py-2.5 cursor-pointer transition-colors duration-150
+                  ${i < options.length - 1 ? 'border-b border-primary/10' : ''}
+                `}
                 style={{
-                  padding: '10px 12px',
-                  cursor: 'pointer',
-                  borderBottom: i < options.length - 1 ? '1px solid rgba(139, 92, 246, 0.1)' : 'none',
                   background: (renderOption ? renderOption(option) : option) === (renderOption ? renderOption(value) : value)
                     ? `${color}20`
-                    : 'transparent',
-                  transition: 'background 0.15s ease'
+                    : 'transparent'
                 }}
                 onMouseEnter={(e) => e.currentTarget.style.background = `${color}15`}
-                onMouseLeave={(e) => e.currentTarget.style.background = 
+                onMouseLeave={(e) => e.currentTarget.style.background =
                   (renderOption ? renderOption(option) : option) === (renderOption ? renderOption(value) : value) ? `${color}20` : 'transparent'
                 }
               >
-                <span style={{ fontSize: '14px', color: '#e2e8f0' }}>
+                <span className="text-sm text-slate-200">
                   {renderOption ? renderOption(option) : option}
                 </span>
               </div>
@@ -122,36 +89,21 @@ const ComparisonSelector = ({ side, selection, onChange, color }) => {
   };
 
   return (
-    <div style={{
-      background: `linear-gradient(135deg, ${color}10, rgba(15, 10, 35, 0.9))`,
-      borderRadius: '16px',
-      padding: '20px',
-      border: `1px solid ${color}30`
-    }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        marginBottom: '16px'
-      }}>
-        <div style={{
-          width: '8px',
-          height: '8px',
-          borderRadius: '50%',
-          background: color
-        }} />
-        <span style={{
-          fontSize: '14px',
-          fontWeight: 600,
-          color,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em'
-        }}>
+    <div
+      className="rounded-2xl p-5 border"
+      style={{
+        background: `linear-gradient(135deg, ${color}10, rgba(15, 10, 35, 0.9))`,
+        borderColor: `${color}30`
+      }}
+    >
+      <div className="flex items-center gap-2 mb-4">
+        <div className="w-2 h-2 rounded-full" style={{ background: color }} />
+        <span className="text-sm font-semibold uppercase tracking-wider" style={{ color }}>
           {side}
         </span>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+      <div className="flex flex-col gap-3">
         {/* Program */}
         <Dropdown
           label="Program"
@@ -197,44 +149,25 @@ const ComparisonSelector = ({ side, selection, onChange, color }) => {
       </div>
 
       {/* Summary */}
-      <div style={{
-        marginTop: '16px',
-        padding: '12px',
-        background: 'rgba(0, 0, 0, 0.3)',
-        borderRadius: '10px'
-      }}>
-        <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Selected</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      <div className="mt-4 p-3 bg-black/30 rounded-xl">
+        <div className="text-xs text-slate-500 mb-2">Selected</div>
+        <div className="flex items-center gap-3">
           {getGameImageUrl(game) ? (
             <img
               src={getGameImageUrl(game, 'header')}
               alt={game.name}
-              style={{
-                width: '60px',
-                height: '28px',
-                borderRadius: '6px',
-                objectFit: 'cover'
-              }}
+              className="w-[60px] h-7 rounded-md object-cover"
             />
           ) : (
-            <div style={{
-              width: '60px',
-              height: '28px',
-              borderRadius: '6px',
-              background: 'rgba(139, 92, 246, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '14px'
-            }}>
+            <div className="w-[60px] h-7 rounded-md bg-primary/20 flex items-center justify-center text-sm">
               🎮
             </div>
           )}
           <div>
-            <div style={{ fontSize: '15px', fontWeight: 600, color: '#f1f5f9' }}>
+            <div className="text-[15px] font-semibold text-slate-50">
               {game.name}
             </div>
-            <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+            <div className="text-[13px] text-slate-400">
               {sku.name} · Build {build}
             </div>
           </div>

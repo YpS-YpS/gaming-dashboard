@@ -6,10 +6,10 @@ const MetricComparison = ({ label, leftValue, rightValue, unit, format = 'number
   const right = typeof rightValue === 'number' ? rightValue : 0;
   const diff = right - left;
   const diffPercent = left !== 0 ? ((right - left) / left) * 100 : 0;
-  
+
   const isNeutral = Math.abs(diffPercent) < 1;
   const isImprovement = higherIsBetter ? diff > 0 : diff < 0;
-  
+
   let diffColor, DiffIcon;
   if (isNeutral) {
     diffColor = '#64748b';
@@ -31,52 +31,34 @@ const MetricComparison = ({ label, leftValue, rightValue, unit, format = 'number
   };
 
   return (
-    <div style={{
-      display: 'grid',
-      gridTemplateColumns: '1fr auto 1fr',
-      alignItems: 'center',
-      padding: '12px 16px',
-      background: 'rgba(15, 10, 35, 0.5)',
-      borderRadius: '10px',
-      border: '1px solid rgba(139, 92, 246, 0.1)'
-    }}>
+    <div className="grid grid-cols-[1fr_auto_1fr] items-center px-4 py-3 bg-[#0f0a23]/50 rounded-xl border border-primary/10">
       {/* Left Value */}
-      <div style={{ textAlign: 'left' }}>
-        <div style={{ fontSize: '24px', fontWeight: 700, color: '#06b6d4' }}>
-          {formatValue(left)}{unit && <span style={{ fontSize: '14px', color: '#64748b', marginLeft: '2px' }}>{unit}</span>}
+      <div className="text-left">
+        <div className="text-2xl font-bold text-[#06b6d4]">
+          {formatValue(left)}{unit && <span className="text-sm text-slate-500 ml-0.5">{unit}</span>}
         </div>
       </div>
 
       {/* Center - Label & Delta */}
-      <div style={{ textAlign: 'center', padding: '0 20px' }}>
-        <div style={{
-          fontSize: '12px',
-          color: '#64748b',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginBottom: '4px'
-        }}>
+      <div className="text-center px-5">
+        <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">
           {label}
         </div>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '4px 10px',
-          borderRadius: '6px',
-          background: `${diffColor}15`
-        }}>
+        <div
+          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md"
+          style={{ background: `${diffColor}15` }}
+        >
           <DiffIcon size={14} style={{ color: diffColor }} />
-          <span style={{ fontSize: '13px', fontWeight: 600, color: diffColor }}>
+          <span className="text-[13px] font-semibold" style={{ color: diffColor }}>
             {diff >= 0 && !isNeutral ? '+' : ''}{diffPercent.toFixed(1)}%
           </span>
         </div>
       </div>
 
       {/* Right Value */}
-      <div style={{ textAlign: 'right' }}>
-        <div style={{ fontSize: '24px', fontWeight: 700, color: '#ec4899' }}>
-          {formatValue(right)}{unit && <span style={{ fontSize: '14px', color: '#64748b', marginLeft: '2px' }}>{unit}</span>}
+      <div className="text-right">
+        <div className="text-2xl font-bold text-[#ec4899]">
+          {formatValue(right)}{unit && <span className="text-sm text-slate-500 ml-0.5">{unit}</span>}
         </div>
       </div>
     </div>
@@ -125,47 +107,26 @@ const ComparisonMetrics = ({ leftMetrics, rightMetrics, leftLabel, rightLabel })
   return (
     <div>
       {/* Header */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        alignItems: 'center',
-        marginBottom: '20px',
-        padding: '0 16px'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px'
-        }}>
-          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#06b6d4' }} />
-          <span style={{ fontSize: '16px', fontWeight: 600, color: '#06b6d4' }}>{leftLabel}</span>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center mb-5 px-4">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-[#06b6d4]" />
+          <span className="text-base font-semibold text-[#06b6d4]">{leftLabel}</span>
         </div>
-        <ArrowRight size={20} style={{ color: '#64748b' }} />
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          gap: '8px'
-        }}>
-          <span style={{ fontSize: '16px', fontWeight: 600, color: '#ec4899' }}>{rightLabel}</span>
-          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#ec4899' }} />
+        <ArrowRight size={20} className="text-slate-500" />
+        <div className="flex items-center justify-end gap-2">
+          <span className="text-base font-semibold text-[#ec4899]">{rightLabel}</span>
+          <div className="w-3 h-3 rounded-full bg-[#ec4899]" />
         </div>
       </div>
 
       {/* Metric Groups */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div className="flex flex-col gap-6">
         {metricGroups.map((group) => (
           <div key={group.title}>
-            <h3 style={{
-              fontSize: '14px',
-              fontWeight: 600,
-              color: '#94a3b8',
-              marginBottom: '12px',
-              paddingLeft: '4px'
-            }}>
+            <h3 className="text-sm font-semibold text-slate-400 mb-3 pl-1">
               {group.title}
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div className="flex flex-col gap-2">
               {group.metrics.map((metric) => (
                 <MetricComparison
                   key={metric.key}

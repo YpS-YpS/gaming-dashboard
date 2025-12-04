@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, Gamepad2 } from 'lucide-react';
 import { programs } from '../../data';
 import { getFpsColor, generateGameMetricsForBuild, getBuildTrend } from '../../utils';
@@ -7,7 +7,28 @@ import DetailedAnalysisPage from '../pages/DetailedAnalysisPage';
 
 const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, selectedSku, selectedBuild }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showStickyHeader, setShowStickyHeader] = useState(false);
+  const scrollRef = useRef(null);
   const program = programs.find(p => p.skus.some(s => s.id === skuId));
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (scrollRef.current) {
+        setShowStickyHeader(scrollRef.current.scrollTop > 400);
+      }
+    };
+
+    const scrollContainer = scrollRef.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+    }
+
+    return () => {
+      if (scrollContainer) {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
 
   const filteredGames = allGames.filter(g =>
     g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -15,103 +36,58 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
   );
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex' }}>
+    <div className="fixed inset-0 z-[1000] flex">
       {/* Backdrop */}
       <div
         onClick={onClose}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(4px)'
-        }}
+        className="absolute inset-0 bg-black/70 backdrop-blur-[4px]"
       />
 
       {/* Game Sidebar */}
-      <div style={{
-        position: 'relative',
-        width: '300px',
-        height: '100%',
-        background: 'linear-gradient(180deg, rgba(20, 15, 45, 0.98) 0%, rgba(15, 10, 35, 0.98) 100%)',
-        borderRight: '1px solid rgba(139, 92, 246, 0.2)',
-        display: 'flex',
-        flexDirection: 'column',
-        animation: 'slideInLeft 0.3s ease-out'
-      }}>
+      <div className="relative w-[300px] h-full bg-gradient-to-b from-[#140f2d]/98 to-[#0f0a23]/98 border-r border-primary/20 flex flex-col animate-slideInLeft">
         {/* Header */}
-        <div style={{ padding: '20px', borderBottom: '1px solid rgba(139, 92, 246, 0.15)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-            <Gamepad2 size={20} style={{ color: '#a855f7' }} />
-            <span style={{ fontSize: '16px', fontWeight: 600, color: '#f1f5f9' }}>All Games</span>
-            <span style={{
-              fontSize: '12px',
-              padding: '2px 8px',
-              borderRadius: '10px',
-              background: 'rgba(139, 92, 246, 0.2)',
-              color: '#a855f7'
-            }}>
+        <div className="p-5 border-b border-primary/15">
+          <div className="flex items-center gap-2.5 mb-3">
+            <Gamepad2 size={20} className="text-primary" />
+            <span className="text-base font-semibold text-slate-50">All Games</span>
+            <span className="text-xs px-2 py-0.5 rounded-[10px] bg-primary/20 text-primary">
               {allGames.length}
             </span>
           </div>
 
           {/* Current Selection Info */}
-          <div style={{
-            background: 'rgba(139, 92, 246, 0.1)',
-            borderRadius: '8px',
-            padding: '10px 12px',
-            marginBottom: '12px'
-          }}>
-            <div style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
+          <div className="bg-primary/10 rounded-lg p-2.5 px-3 mb-3">
+            <div className="text-[11px] text-slate-500 uppercase mb-1">
               Current Config
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-              <span style={{
-                fontSize: '13px',
-                padding: '2px 8px',
-                borderRadius: '6px',
-                background: `${program?.color || '#a855f7'}30`,
-                color: program?.color || '#a855f7',
-                fontWeight: 500
-              }}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
+                className="text-[13px] px-2 py-0.5 rounded-md font-medium"
+                style={{ background: `${program?.color || '#a855f7'}30`, color: program?.color || '#a855f7' }}
+              >
                 {selectedSku?.name}
               </span>
-              <span style={{
-                fontSize: '13px',
-                padding: '2px 8px',
-                borderRadius: '6px',
-                background: 'rgba(16, 185, 129, 0.2)',
-                color: '#10b981',
-                fontWeight: 500
-              }}>
+              <span className="text-[13px] px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-500 font-medium">
                 {selectedBuild}
               </span>
             </div>
           </div>
 
           {/* Search */}
-          <div style={{ position: 'relative' }}>
+          <div className="relative">
             <input
               type="text"
               placeholder="Search games..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                background: 'rgba(30, 20, 60, 0.6)',
-                border: '1px solid rgba(139, 92, 246, 0.2)',
-                borderRadius: '8px',
-                padding: '10px 36px 10px 12px',
-                fontSize: '14px',
-                color: '#f1f5f9',
-                outline: 'none'
-              }}
+              className="w-full bg-[#1e143c]/60 border border-primary/20 rounded-lg py-2.5 pl-3 pr-9 text-sm text-slate-50 outline-none focus:border-primary/40 transition-colors"
             />
-            <Search size={16} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+            <Search size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500" />
           </div>
         </div>
 
         {/* Game List */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+        <div className="flex-1 overflow-y-auto p-3">
           {filteredGames.map(g => {
             const metrics = generateGameMetricsForBuild(g.id, skuId, buildId);
             const isActive = g.id === game.id;
@@ -121,40 +97,28 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
               <div
                 key={g.id}
                 onClick={() => onSwitchGame(g)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  marginBottom: '4px',
-                  background: isActive ? 'rgba(139, 92, 246, 0.2)' : 'transparent',
-                  border: isActive ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid transparent',
-                  transition: 'all 0.15s ease'
-                }}
-                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(139, 92, 246, 0.1)'; }}
-                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
+                className={`
+                  flex items-center gap-3 p-2.5 rounded-xl cursor-pointer mb-1 transition-all duration-150
+                  ${isActive
+                    ? 'bg-primary/20 border border-primary/40'
+                    : 'bg-transparent border border-transparent hover:bg-primary/10'}
+                `}
               >
                 <GameImage game={g} size={36} borderRadius={8} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: '14px',
-                    fontWeight: isActive ? 600 : 500,
-                    color: isActive ? '#f1f5f9' : '#94a3b8',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
+                <div className="flex-1 min-w-0">
+                  <div className={`
+                    text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis
+                    ${isActive ? 'text-slate-50' : 'text-slate-400'}
+                  `}>
                     {g.name}
                   </div>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>{g.genre}</div>
+                  <div className="text-[11px] text-slate-500">{g.genre}</div>
                 </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontSize: '16px', fontWeight: 700, color: getFpsColor(metrics.avgFps) }}>
+                <div className="text-right flex-shrink-0">
+                  <div className="text-base font-bold" style={{ color: getFpsColor(metrics.avgFps) }}>
                     {metrics.avgFps}
                   </div>
-                  <div style={{ fontSize: '10px', color: delta >= 0 ? '#10b981' : '#ef4444' }}>
+                  <div className={`text-[10px] ${delta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                     {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}
                   </div>
                 </div>
@@ -164,59 +128,69 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
         </div>
 
         {/* Footer hint */}
-        <div style={{
-          padding: '12px 20px',
-          borderTop: '1px solid rgba(139, 92, 246, 0.15)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '6px'
-        }}>
-          <span style={{
-            fontSize: '11px',
-            color: '#64748b',
-            padding: '2px 6px',
-            background: 'rgba(100, 116, 139, 0.2)',
-            borderRadius: '4px'
-          }}>
+        <div className="p-3 px-5 border-t border-primary/15 flex items-center justify-center gap-1.5">
+          <span className="text-[11px] text-slate-500 px-1.5 py-0.5 bg-slate-500/20 rounded">
             ESC
           </span>
-          <span style={{ fontSize: '12px', color: '#64748b' }}>to close</span>
+          <span className="text-xs text-slate-500">to close</span>
         </div>
       </div>
 
       {/* Main Content */}
-      <div style={{
-        position: 'relative',
-        flex: 1,
-        height: '100%',
-        overflowY: 'auto',
-        background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0f2e 50%, #0d0a18 100%)',
-        animation: 'slideInRight 0.3s ease-out'
-      }}>
+      <div
+        ref={scrollRef}
+        className="relative flex-1 h-full overflow-y-auto bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] animate-slideInRight"
+      >
+        {/* Sticky Header */}
+        <div
+          className={`
+            fixed top-0 left-[300px] right-0 z-[1002] px-8 py-3
+            bg-[#0f0a1e]/90 backdrop-blur-md border-b border-white/10
+            flex items-center justify-between transition-all duration-300 transform
+            ${showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}
+          `}
+        >
+          <div className="flex items-center gap-4">
+            <GameImage game={game} size={40} borderRadius={8} />
+            <div>
+              <h2 className="text-lg font-bold text-slate-50 leading-none mb-1">{game.name}</h2>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] px-2 py-0.5 rounded bg-primary/20 text-primary uppercase tracking-wider font-bold">
+                  {game.genre}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">SKU</span>
+              <span
+                className="text-xs font-bold px-2 py-1 rounded"
+                style={{ background: `${program?.color || '#a855f7'}20`, color: program?.color || '#a855f7' }}
+              >
+                {selectedSku?.name}
+              </span>
+            </div>
+            <div className="h-4 w-px bg-white/10" />
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 uppercase tracking-wider font-bold">Build</span>
+              <span className="text-xs font-bold text-emerald-400 px-2 py-1 rounded bg-emerald-500/10">{buildId}</span>
+            </div>
+            <button
+              onClick={onClose}
+              className="ml-2 p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+            >
+              <span className="sr-only">Close</span>
+              <X size={20} />
+            </button>
+          </div>
+        </div>
         {/* Close Button */}
         <button
           onClick={onClose}
-          style={{
-            position: 'fixed',
-            top: '20px',
-            right: '20px',
-            zIndex: 1001,
-            width: '44px',
-            height: '44px',
-            borderRadius: '12px',
-            border: 'none',
-            background: 'rgba(239, 68, 68, 0.15)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'}
+          className="fixed top-5 right-5 z-[1001] w-11 h-11 rounded-xl border-none bg-red-500/15 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red-500/30 group"
         >
-          <X size={22} style={{ color: '#ef4444' }} />
+          <X size={22} className="text-red-500" />
         </button>
 
         <DetailedAnalysisPage game={game} skuId={skuId} buildId={buildId} />

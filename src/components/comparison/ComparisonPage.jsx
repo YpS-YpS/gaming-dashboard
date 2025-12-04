@@ -50,40 +50,22 @@ const ComparisonPage = () => {
   const rightLabel = `${rightSelection.game.name} (${rightSelection.sku.name} · ${rightSelection.build})`;
 
   return (
-    <div style={{ padding: '32px' }}>
+    <div className="p-8">
       {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          marginBottom: '8px'
-        }}>
-          <ArrowLeftRight size={28} style={{ color: '#a855f7' }} />
-          <h1 style={{
-            margin: 0,
-            fontSize: '32px',
-            fontWeight: 700,
-            background: 'linear-gradient(90deg, #06b6d4, #ec4899)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
+          <ArrowLeftRight size={28} className="text-secondary" />
+          <h1 className="m-0 text-[32px] font-bold bg-gradient-to-r from-[#06b6d4] to-[#ec4899] bg-clip-text text-transparent">
             Compare Configurations
           </h1>
         </div>
-        <p style={{ margin: 0, fontSize: '16px', color: '#64748b' }}>
+        <p className="m-0 text-base text-slate-500">
           Compare any game, SKU, and build combination side-by-side
         </p>
       </div>
 
       {/* Selection Area */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr auto 1fr',
-        gap: '20px',
-        marginBottom: '32px',
-        alignItems: 'start'
-      }}>
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-5 mb-8 items-start">
         {/* Left Selector */}
         <ComparisonSelector
           side="Left"
@@ -93,64 +75,21 @@ const ComparisonPage = () => {
         />
 
         {/* Center Controls */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          paddingTop: '60px'
-        }}>
+        <div className="flex flex-col gap-3 pt-[60px]">
           <button
             onClick={swapSelections}
             title="Swap left and right"
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              border: 'none',
-              background: 'rgba(139, 92, 246, 0.2)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(139, 92, 246, 0.4)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(139, 92, 246, 0.2)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
+            className="w-12 h-12 rounded-xl border-none bg-primary/20 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-primary/40 hover:scale-105"
           >
-            <RefreshCw size={20} style={{ color: '#a855f7' }} />
+            <RefreshCw size={20} className="text-secondary" />
           </button>
 
           <button
             onClick={copyToRight}
             title="Copy left to right"
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: '12px',
-              border: 'none',
-              background: 'rgba(6, 182, 212, 0.2)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(6, 182, 212, 0.4)';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(6, 182, 212, 0.2)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
+            className="w-12 h-12 rounded-xl border-none bg-[#06b6d4]/20 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-[#06b6d4]/40 hover:scale-105"
           >
-            <Copy size={20} style={{ color: '#06b6d4' }} />
+            <Copy size={20} className="text-[#06b6d4]" />
           </button>
         </div>
 
@@ -164,34 +103,24 @@ const ComparisonPage = () => {
       </div>
 
       {/* Quick Summary Cards */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '16px',
-        marginBottom: '24px'
-      }}>
+      <div className="grid grid-cols-2 gap-4 mb-6">
         {/* Left Summary */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(15, 10, 35, 0.9))',
-          borderRadius: '16px',
-          padding: '20px',
-          border: '1px solid rgba(6, 182, 212, 0.3)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="bg-gradient-to-br from-[#06b6d4]/15 to-[#0f0a23]/90 rounded-2xl p-5 border border-[#06b6d4]/30">
+          <div className="flex items-center gap-4">
             <GameImage game={leftSelection.game} size={64} borderRadius={12} />
-            <div style={{ flex: 1 }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#f1f5f9' }}>
+            <div className="flex-1">
+              <h3 className="m-0 text-lg font-semibold text-slate-50">
                 {leftSelection.game.name}
               </h3>
-              <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#94a3b8' }}>
+              <p className="m-0 mt-1 text-sm text-slate-400">
                 {leftSelection.sku.fullName} · Build {leftSelection.build}
               </p>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '36px', fontWeight: 700, color: '#06b6d4' }}>
+            <div className="text-right">
+              <div className="text-4xl font-bold text-[#06b6d4]">
                 {leftMetrics.avgFps}
               </div>
-              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>
+              <div className="text-xs text-slate-500 uppercase">
                 Avg FPS
               </div>
             </div>
@@ -199,27 +128,22 @@ const ComparisonPage = () => {
         </div>
 
         {/* Right Summary */}
-        <div style={{
-          background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(15, 10, 35, 0.9))',
-          borderRadius: '16px',
-          padding: '20px',
-          border: '1px solid rgba(236, 72, 153, 0.3)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="bg-gradient-to-br from-[#ec4899]/15 to-[#0f0a23]/90 rounded-2xl p-5 border border-[#ec4899]/30">
+          <div className="flex items-center gap-4">
             <GameImage game={rightSelection.game} size={64} borderRadius={12} />
-            <div style={{ flex: 1 }}>
-              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#f1f5f9' }}>
+            <div className="flex-1">
+              <h3 className="m-0 text-lg font-semibold text-slate-50">
                 {rightSelection.game.name}
               </h3>
-              <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#94a3b8' }}>
+              <p className="m-0 mt-1 text-sm text-slate-400">
                 {rightSelection.sku.fullName} · Build {rightSelection.build}
               </p>
             </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '36px', fontWeight: 700, color: '#ec4899' }}>
+            <div className="text-right">
+              <div className="text-4xl font-bold text-[#ec4899]">
                 {rightMetrics.avgFps}
               </div>
-              <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase' }}>
+              <div className="text-xs text-slate-500 uppercase">
                 Avg FPS
               </div>
             </div>
@@ -235,39 +159,31 @@ const ComparisonPage = () => {
         const isNeutral = Math.abs(diffPercent) < 1;
 
         return (
-          <div style={{
-            background: isNeutral
-              ? 'rgba(100, 116, 139, 0.15)'
+          <div className={`
+            rounded-xl p-4 px-6 mb-6 flex items-center justify-center gap-4 border
+            ${isNeutral
+              ? 'bg-slate-500/15 border-slate-500/30'
               : isPositive
-                ? 'rgba(16, 185, 129, 0.15)'
-                : 'rgba(239, 68, 68, 0.15)',
-            borderRadius: '12px',
-            padding: '16px 24px',
-            marginBottom: '24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '16px',
-            border: `1px solid ${isNeutral ? 'rgba(100, 116, 139, 0.3)' : isPositive ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
-          }}>
-            <span style={{ fontSize: '15px', color: '#94a3b8' }}>
+                ? 'bg-emerald-500/15 border-emerald-500/30'
+                : 'bg-red-500/15 border-red-500/30'}
+          `}>
+            <span className="text-[15px] text-slate-400">
               Right configuration is
             </span>
-            <span style={{
-              fontSize: '24px',
-              fontWeight: 700,
-              color: isNeutral ? '#94a3b8' : isPositive ? '#10b981' : '#ef4444'
-            }}>
+            <span className={`
+              text-2xl font-bold
+              ${isNeutral ? 'text-slate-400' : isPositive ? 'text-emerald-500' : 'text-red-500'}
+            `}>
               {isNeutral ? 'equivalent' : `${Math.abs(diff)} FPS ${isPositive ? 'faster' : 'slower'}`}
             </span>
-            <span style={{
-              fontSize: '16px',
-              fontWeight: 600,
-              color: isNeutral ? '#64748b' : isPositive ? '#10b981' : '#ef4444',
-              padding: '4px 12px',
-              borderRadius: '8px',
-              background: isNeutral ? 'rgba(100, 116, 139, 0.2)' : isPositive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'
-            }}>
+            <span className={`
+              text-base font-semibold px-3 py-1 rounded-lg
+              ${isNeutral
+                ? 'text-slate-500 bg-slate-500/20'
+                : isPositive
+                  ? 'text-emerald-500 bg-emerald-500/20'
+                  : 'text-red-500 bg-red-500/20'}
+            `}>
               {isPositive && !isNeutral ? '+' : ''}{diffPercent.toFixed(1)}%
             </span>
           </div>
@@ -275,16 +191,7 @@ const ComparisonPage = () => {
       })()}
 
       {/* Tab Navigation */}
-      <div style={{
-        display: 'flex',
-        gap: '4px',
-        marginBottom: '24px',
-        background: 'rgba(20, 15, 45, 0.6)',
-        padding: '4px',
-        borderRadius: '12px',
-        border: '1px solid rgba(139, 92, 246, 0.15)',
-        width: 'fit-content'
-      }}>
+      <div className="flex gap-1 mb-6 bg-[#140f2d]/60 p-1 rounded-xl border border-primary/15 w-fit">
         {[
           { id: 'metrics', label: 'Metrics' },
           { id: 'charts', label: 'Charts' }
@@ -292,17 +199,12 @@ const ComparisonPage = () => {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            style={{
-              padding: '10px 24px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: 500,
-              transition: 'all 0.2s ease',
-              background: activeTab === tab.id ? 'rgba(139, 92, 246, 0.3)' : 'transparent',
-              color: activeTab === tab.id ? '#f1f5f9' : '#64748b'
-            }}
+            className={`
+              px-6 py-2.5 rounded-lg border-none cursor-pointer text-sm font-medium transition-all duration-200
+              ${activeTab === tab.id
+                ? 'bg-primary/30 text-slate-50'
+                : 'bg-transparent text-slate-500 hover:text-slate-400'}
+            `}
           >
             {tab.label}
           </button>

@@ -1,13 +1,9 @@
 import React, { useState, useMemo, Component } from 'react';
-import { ResponsiveContainer, AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ScatterChart, Scatter, ComposedChart } from 'recharts';
-import { Clock, Cpu, Activity, Gauge, AlertTriangle, Thermometer, Zap, Settings, Monitor, HardDrive, MemoryStick, Layers, ChevronDown, ChevronUp, Timer, Code2, Gamepad2, Info } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Gauge, Settings, Monitor, HardDrive, MemoryStick, Layers, ChevronDown, ChevronUp, Timer, Code2, Gamepad2, Info, Cpu } from 'lucide-react';
 import { programs, getGameImageUrl } from '../../data';
 import {
   getFpsColor,
-  pCoreColors,
-  eCoreColors,
-  tempCoreColors,
-  clipReasonColors,
   generateDetailedFrameTimeData,
   generatePerCoreFrequencyData,
   generateCpuResidencyData,
@@ -19,9 +15,19 @@ import {
   generateGameMetricsForBuild,
   getBuildTrend
 } from '../../utils';
-import { TrendTooltip, CpuResidencyTooltip, PerformanceCapabilityTooltip, PowerAnalysisTooltip } from '../charts/tooltips';
 import DeltaBadge from '../common/DeltaBadge';
 import GameImage from '../common/GameImage';
+
+// Chart Components
+import FrameTimeChart from '../charts/analysis/FrameTimeChart';
+import FrequencyChart from '../charts/analysis/FrequencyChart';
+import CpuResidencyChart from '../charts/analysis/CpuResidencyChart';
+import PerformanceCapabilityChart from '../charts/analysis/PerformanceCapabilityChart';
+import ClipReasonChart from '../charts/analysis/ClipReasonChart';
+import TemperatureChart from '../charts/analysis/TemperatureChart';
+import PowerChart from '../charts/analysis/PowerChart';
+import TrendChart from '../charts/analysis/TrendChart';
+
 
 // Error Boundary Component
 class ErrorBoundary extends Component {
@@ -35,20 +41,11 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0f2e 50%, #0d0a18 100%)',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontFamily: "'Space Grotesk', sans-serif",
-          padding: '40px'
-        }}>
-          <div style={{ textAlign: 'center', maxWidth: '600px' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
-            <div style={{ fontSize: '20px', color: '#ef4444', marginBottom: '12px' }}>Something went wrong</div>
-            <div style={{ fontSize: '14px', color: '#64748b', background: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px', textAlign: 'left', overflow: 'auto' }}>
+        <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white flex items-center justify-center font-space p-10">
+          <div className="text-center max-w-[600px]">
+            <div className="text-5xl mb-4">⚠️</div>
+            <div className="text-xl text-red-500 mb-3">Something went wrong</div>
+            <div className="text-sm text-slate-500 bg-black/30 p-4 rounded-lg text-left overflow-auto">
               {this.state.error?.toString()}
             </div>
           </div>
@@ -61,15 +58,10 @@ class ErrorBoundary extends Component {
 
 // Config Section Component
 const ConfigSection = ({ title, icon: Icon, children }) => (
-  <div style={{
-    background: 'rgba(15, 10, 35, 0.7)',
-    borderRadius: '12px',
-    padding: '16px',
-    border: '1px solid rgba(139, 92, 246, 0.15)'
-  }}>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-      <Icon size={18} style={{ color: '#a855f7' }} />
-      <span style={{ fontSize: '15px', fontWeight: 600, color: '#f1f5f9' }}>{title}</span>
+  <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/15">
+    <div className="flex items-center gap-2.5 mb-3">
+      <Icon size={18} className="text-primary" />
+      <span className="text-[15px] font-semibold text-slate-50">{title}</span>
     </div>
     {children}
   </div>
@@ -77,68 +69,42 @@ const ConfigSection = ({ title, icon: Icon, children }) => (
 
 // Config Row Component
 const ConfigRow = ({ label, value, highlight }) => (
-  <div style={{
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '6px 0',
-    borderBottom: '1px solid rgba(139, 92, 246, 0.08)'
-  }}>
-    <span style={{ fontSize: '13px', color: '#64748b' }}>{label}</span>
-    <span style={{ fontSize: '13px', fontWeight: 500, color: highlight || '#e2e8f0' }}>{value}</span>
+  <div className="flex justify-between py-1.5 border-b border-primary/10">
+    <span className="text-[13px] text-slate-500">{label}</span>
+    <span className="text-[13px] font-medium" style={{ color: highlight || '#e2e8f0' }}>{value}</span>
   </div>
 );
 
 // FAQ Item Component
 const FAQItem = ({ faq, index, isOpen, onToggle }) => (
-  <div 
-    style={{
-      background: isOpen ? 'rgba(139, 92, 246, 0.1)' : 'rgba(15, 10, 35, 0.5)',
-      borderRadius: '12px',
-      border: `1px solid ${isOpen ? 'rgba(139, 92, 246, 0.3)' : 'rgba(139, 92, 246, 0.1)'}`,
-      overflow: 'hidden',
-      transition: 'all 0.3s ease'
-    }}
+  <div
+    className={`
+      rounded-xl border overflow-hidden transition-all duration-300
+      ${isOpen
+        ? 'bg-primary/10 border-primary/30'
+        : 'bg-[#0f0a23]/50 border-primary/10'}
+    `}
   >
     <button
       onClick={onToggle}
-      style={{
-        width: '100%',
-        padding: '16px 20px',
-        background: 'transparent',
-        border: 'none',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px'
-      }}
+      className="w-full p-5 bg-transparent border-none cursor-pointer flex items-center justify-between gap-3"
     >
-      <span style={{ 
-        fontSize: '14px', 
-        fontWeight: 600, 
-        color: isOpen ? '#a855f7' : '#e2e8f0',
-        textAlign: 'left',
-        transition: 'color 0.3s ease'
-      }}>
+      <span className={`
+        text-sm font-semibold text-left transition-colors duration-300
+        ${isOpen ? 'text-primary' : 'text-slate-200'}
+      `}>
         {faq.q}
       </span>
-      {isOpen ? 
-        <ChevronUp size={18} style={{ color: '#a855f7', flexShrink: 0 }} /> : 
-        <ChevronDown size={18} style={{ color: '#64748b', flexShrink: 0 }} />
+      {isOpen ?
+        <ChevronUp size={18} className="text-primary flex-shrink-0" /> :
+        <ChevronDown size={18} className="text-slate-500 flex-shrink-0" />
       }
     </button>
-    <div style={{
-      maxHeight: isOpen ? '200px' : '0',
-      overflow: 'hidden',
-      transition: 'max-height 0.3s ease'
-    }}>
-      <p style={{
-        margin: 0,
-        padding: '0 20px 16px 20px',
-        fontSize: '13px',
-        lineHeight: '1.6',
-        color: '#94a3b8'
-      }}>
+    <div className={`
+      overflow-hidden transition-all duration-300 ease-in-out
+      ${isOpen ? 'max-h-[200px]' : 'max-h-0'}
+    `}>
+      <p className="m-0 px-5 pb-4 text-[13px] leading-relaxed text-slate-400">
         {faq.a}
       </p>
     </div>
@@ -147,37 +113,22 @@ const FAQItem = ({ faq, index, isOpen, onToggle }) => (
 
 // Technical Spec Badge Component
 const TechBadge = ({ icon: Icon, label, value, color }) => (
-  <div style={{
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    padding: '12px 16px',
-    background: 'rgba(15, 10, 35, 0.6)',
-    borderRadius: '10px',
-    border: '1px solid rgba(139, 92, 246, 0.15)'
-  }}>
-    <div style={{
-      width: '36px',
-      height: '36px',
-      borderRadius: '8px',
-      background: `${color}20`,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center'
-    }}>
+  <div className="flex items-center gap-3 p-3 px-4 bg-[#0f0a23]/60 rounded-xl border border-primary/15">
+    <div
+      className="w-9 h-9 rounded-lg flex items-center justify-center"
+      style={{ background: `${color}20` }}
+    >
       <Icon size={18} style={{ color }} />
     </div>
     <div>
-      <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>{label}</div>
-      <div style={{ fontSize: '14px', fontWeight: 600, color: '#f1f5f9' }}>{value}</div>
+      <div className="text-[11px] text-slate-500 mb-0.5">{label}</div>
+      <div className="text-sm font-semibold text-slate-50">{value}</div>
     </div>
   </div>
 );
 
 const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
-  const [frameTimeMode, setFrameTimeMode] = useState('frameTime');
-  const [selectedCores, setSelectedCores] = useState({ pCores: [0, 1], eCores: [0] });
-  const [selectedTempCores, setSelectedTempCores] = useState([0, 1, 2, 3]);
+  const navigate = useNavigate();
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const [heroLoaded, setHeroLoaded] = useState(false);
   const [heroError, setHeroError] = useState(false);
@@ -198,12 +149,23 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
   const perCoreTempResult = useMemo(() => generatePerCoreTemperatureData(safeSkuId, seed), [safeSkuId, seed]);
   const powerData = useMemo(() => generatePowerData(seed), [seed]);
 
+  // Handle Escape key to close
+  React.useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        navigate(-1);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [navigate]);
+
   // Destructure memoized results with safe defaults
   const { data: perCoreData = [], pCores: pCoreCount = 4, eCores: eCoreCount = 4 } = perCoreResult || {};
   const { trendData = [], delta = 0, deltaPercent = 0 } = trendResult || {};
   const { data: clipReasonData = [] } = clipReasonResult || {};
   const { data: perCoreTemperatureData = [], coreCount: tempCoreCount = 8 } = perCoreTempResult || {};
-  
+
   // Convert core counts to arrays for mapping
   const pCores = Array.from({ length: pCoreCount }, (_, i) => i);
   const eCores = Array.from({ length: eCoreCount }, (_, i) => i);
@@ -211,18 +173,10 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
   // Defensive check - return early if required props missing
   if (!game || !skuId || !buildId) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0f2e 50%, #0d0a18 100%)',
-        color: 'white',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: "'Space Grotesk', sans-serif"
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎮</div>
-          <div style={{ fontSize: '18px', color: '#64748b' }}>Loading game data...</div>
+      <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white flex items-center justify-center font-space">
+        <div className="text-center">
+          <div className="text-5xl mb-4">🎮</div>
+          <div className="text-lg text-slate-500">Loading game data...</div>
         </div>
       </div>
     );
@@ -237,45 +191,14 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
   const heroUrl = getGameImageUrl(game, 'hero');
   const fallbackUrl = getGameImageUrl(game, 'header');
 
-  const frameTimeModes = [
-    { id: 'frameTime', label: 'Frame Time', color: '#a855f7' },
-    { id: 'fps', label: 'FPS', color: '#10b981' },
-    { id: 'percentile95', label: '95th %', color: '#f59e0b' },
-    { id: 'percentile99', label: '99th %', color: '#ef4444' },
-    { id: 'onePercentLow', label: '1% Low', color: '#06b6d4' },
-    { id: 'movingAvg', label: 'Moving Avg', color: '#8b5cf6' }
-  ];
 
-  const currentFrameTimeMode = frameTimeModes.find(m => m.id === frameTimeMode);
-
-  const toggleCore = (type, index) => setSelectedCores(prev => {
-    const key = type === 'p' ? 'pCores' : 'eCores';
-    return { ...prev, [key]: prev[key].includes(index) ? prev[key].filter(i => i !== index) : [...prev[key], index] };
-  });
-
-  const toggleTempCore = (index) => setSelectedTempCores(prev =>
-    prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
-  );
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0f2e 50%, #0d0a18 100%)',
-      color: 'white',
-      fontFamily: "'Space Grotesk', sans-serif"
-    }}>
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white font-space">
       {/* Hero Section with Game Backdrop */}
-      <div style={{ 
-        position: 'relative', 
-        minHeight: '420px',
-        overflow: 'hidden'
-      }}>
+      <div className="relative min-h-[420px] overflow-hidden">
         {/* Background Image */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          zIndex: 0
-        }}>
+        <div className="absolute inset-0 z-0">
           {(heroUrl || fallbackUrl) && (
             <img
               src={heroError ? fallbackUrl : heroUrl}
@@ -287,122 +210,57 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
                   setHeroLoaded(false);
                 }
               }}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center top',
-                opacity: heroLoaded ? 0.5 : 0,
-                transition: 'opacity 0.8s ease',
-                filter: heroError ? 'blur(8px) scale(1.1)' : 'none',
-                transform: heroError ? 'scale(1.1)' : 'scale(1)'
-              }}
+              className={`
+                w-full h-full object-cover object-top transition-opacity duration-700
+                ${heroLoaded ? 'opacity-70' : 'opacity-0'}
+                ${heroError ? 'blur-sm scale-110' : 'scale-100'}
+              `}
             />
           )}
         </div>
-        
+
         {/* Gradient Overlays */}
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'linear-gradient(180deg, rgba(15, 10, 30, 0.3) 0%, rgba(15, 10, 30, 0.7) 50%, rgba(15, 10, 30, 1) 100%)',
-          zIndex: 1
-        }} />
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: `linear-gradient(90deg, rgba(15, 10, 30, 0.9) 0%, transparent 50%, rgba(15, 10, 30, 0.9) 100%)`,
-          zIndex: 1
-        }} />
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: `radial-gradient(ellipse at top left, ${program?.color || '#a855f7'}15 0%, transparent 50%)`,
-          zIndex: 1
-        }} />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-[#0f0a1e]/30 via-[#0f0a1e]/70 to-[#0f0a1e]" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-[#0f0a1e]/90 via-transparent to-[#0f0a1e]/90" />
+        <div
+          className="absolute inset-0 z-[1]"
+          style={{ background: `radial-gradient(ellipse at top left, ${program?.color || '#a855f7'}15 0%, transparent 50%)` }}
+        />
 
         {/* Hero Content */}
-        <div style={{ 
-          position: 'relative', 
-          zIndex: 2, 
-          padding: '40px',
-          paddingBottom: '60px'
-        }}>
+        <div className="relative z-[2] p-10 pb-[60px]">
           {/* Game Header */}
-          <div style={{ 
-            display: 'flex', 
-            alignItems: 'flex-start', 
-            gap: '24px', 
-            marginBottom: '32px' 
-          }}>
-            <GameImage 
-              game={game} 
-              size={100} 
+          <div className="flex items-start gap-6 mb-8">
+            <GameImage
+              game={game}
+              size={140}
               borderRadius={16}
-              style={{ 
+              style={{
                 border: `3px solid ${program?.color || '#a855f7'}60`,
                 boxShadow: `0 8px 32px ${program?.color || '#a855f7'}30`
               }}
             />
-            <div style={{ flex: 1 }}>
-              <h1 style={{ 
-                margin: 0, 
-                fontSize: '36px', 
-                fontWeight: 700, 
-                color: '#f1f5f9', 
-                marginBottom: '8px',
-                textShadow: '0 2px 20px rgba(0,0,0,0.5)'
-              }}>
+            <div className="flex-1">
+              <h1 className="m-0 text-5xl font-bold text-slate-50 mb-2 drop-shadow-lg">
                 {game.name}
               </h1>
-              <p style={{
-                margin: '0 0 16px 0',
-                fontSize: '14px',
-                color: '#94a3b8',
-                maxWidth: '600px',
-                lineHeight: '1.5'
-              }}>
+              <p className="m-0 mb-4 text-sm text-slate-400 max-w-[600px] leading-relaxed">
                 {game.description}
               </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <span style={{ 
-                  fontSize: '13px', 
-                  padding: '6px 14px', 
-                  borderRadius: '20px', 
-                  background: 'rgba(139, 92, 246, 0.2)', 
-                  color: '#a855f7',
-                  fontWeight: 500
-                }}>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <span className="text-[13px] px-3.5 py-1.5 rounded-full bg-primary/20 text-primary font-medium">
                   {game.genre}
                 </span>
-                <span style={{ 
-                  fontSize: '13px', 
-                  padding: '6px 14px', 
-                  borderRadius: '20px', 
-                  background: `${program?.color || '#a855f7'}20`, 
-                  color: program?.color || '#a855f7',
-                  fontWeight: 500
-                }}>
+                <span
+                  className="text-[13px] px-3.5 py-1.5 rounded-full font-medium"
+                  style={{ background: `${program?.color || '#a855f7'}20`, color: program?.color || '#a855f7' }}
+                >
                   {sku?.fullName}
                 </span>
-                <span style={{ 
-                  fontSize: '13px', 
-                  padding: '6px 14px', 
-                  borderRadius: '20px', 
-                  background: 'rgba(16, 185, 129, 0.2)', 
-                  color: '#10b981',
-                  fontWeight: 500
-                }}>
+                <span className="text-[13px] px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-500 font-medium">
                   Build {buildId}
                 </span>
-                <span style={{ 
-                  fontSize: '13px', 
-                  padding: '6px 14px', 
-                  borderRadius: '20px', 
-                  background: 'rgba(59, 130, 246, 0.2)', 
-                  color: '#3b82f6',
-                  fontWeight: 500
-                }}>
+                <span className="text-[13px] px-3.5 py-1.5 rounded-full bg-blue-500/20 text-blue-500 font-medium">
                   {game.developer}
                 </span>
               </div>
@@ -410,422 +268,150 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
           </div>
 
           {/* Technical Specs Row */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '16px',
-            marginBottom: '32px'
-          }}>
-            <TechBadge 
-              icon={Code2} 
-              label="Game Engine" 
-              value={game.engine || 'Custom Engine'} 
-              color="#a855f7" 
+          <div className="grid grid-cols-4 gap-4 mb-8">
+            <TechBadge
+              icon={Code2}
+              label="Game Engine"
+              value={game.engine || 'Custom Engine'}
+              color="#a855f7"
             />
-            <TechBadge 
-              icon={Monitor} 
-              label="Graphics API" 
-              value={game.graphicsAPI || 'DirectX 12'} 
-              color="#3b82f6" 
+            <TechBadge
+              icon={Monitor}
+              label="Graphics API"
+              value={game.graphicsAPI || 'DirectX 12'}
+              color="#3b82f6"
             />
-            <TechBadge 
-              icon={Timer} 
-              label="Benchmark Duration" 
-              value={game.benchmarkDuration || '60s'} 
-              color="#10b981" 
+            <TechBadge
+              icon={Timer}
+              label="Benchmark Duration"
+              value={game.benchmarkDuration || '60s'}
+              color="#10b981"
             />
-            <TechBadge 
-              icon={Gamepad2} 
-              label="Benchmark Scene" 
-              value={game.benchmarkScene || 'Built-in Benchmark'} 
-              color="#f59e0b" 
+            <TechBadge
+              icon={Gamepad2}
+              label="Benchmark Scene"
+              value={game.benchmarkScene || 'Built-in Benchmark'}
+              color="#f59e0b"
             />
           </div>
+
+          {/* Fun Facts / Did You Know */}
+          {game.funFacts && game.funFacts.length > 0 && (
+            <div className="mt-6 border-t border-white/10 pt-6">
+              <h3 className="text-sm font-semibold text-primary mb-3 flex items-center gap-2">
+                <Info size={16} />
+                Did You Know?
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {game.funFacts.map((fact, i) => (
+                  <p key={i} className="text-[13px] text-slate-300 leading-relaxed m-0">
+                    {fact}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Main Content */}
-      <div style={{ padding: '0 40px 40px 40px' }}>
+      <div className="px-10 pb-10">
         {/* Quick Stats & FAQs Grid */}
-        <div style={{ 
-          display: 'grid', 
-          gridTemplateColumns: '1fr 1fr', 
-          gap: '24px',
-          marginBottom: '32px',
-          marginTop: '24px'
-        }}>
-          {/* Performance Overview */}
-          <div style={{
-            background: 'rgba(15, 10, 35, 0.8)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: '20px',
-            padding: '24px',
-            border: '1px solid rgba(139, 92, 246, 0.2)'
-          }}>
-            <h3 style={{ 
-              margin: '0 0 20px 0', 
-              fontSize: '18px', 
-              fontWeight: 600, 
-              color: '#f1f5f9',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <Gauge size={20} style={{ color: '#10b981' }} />
+        {/* Quick Stats Grid */}
+        <div className="mb-8 mt-6">
+          {/* Performance Overview - Full Width */}
+          <div className="bg-[#0f0a23]/80 backdrop-blur-xl rounded-2xl p-6 border border-primary/20">
+            <h3 className="m-0 mb-5 text-lg font-semibold text-slate-50 flex items-center gap-2.5">
+              <Gauge size={20} className="text-emerald-500" />
               Performance Overview
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%)',
-                borderRadius: '12px',
-                padding: '16px',
-                border: '1px solid rgba(16, 185, 129, 0.2)'
-              }}>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Average FPS</div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: getFpsColor(metrics.avgFps) }}>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Row 1 */}
+              <div className="bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 rounded-xl p-4 border border-emerald-500/20">
+                <div className="text-xs text-slate-500 mb-1">Average FPS</div>
+                <div className="text-[28px] font-bold" style={{ color: getFpsColor(metrics.avgFps) }}>
                   {metrics.avgFps.toFixed(0)}
                 </div>
               </div>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(245, 158, 11, 0.05) 100%)',
-                borderRadius: '12px',
-                padding: '16px',
-                border: '1px solid rgba(245, 158, 11, 0.2)'
-              }}>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>1% Low FPS</div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: '#f59e0b' }}>
+              <div className="bg-gradient-to-br from-amber-500/15 to-amber-500/5 rounded-xl p-4 border border-amber-500/20">
+                <div className="text-xs text-slate-500 mb-1">1% Low FPS</div>
+                <div className="text-[28px] font-bold text-amber-500">
                   {metrics.onePercentLow.toFixed(0)}
                 </div>
               </div>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(168, 85, 247, 0.05) 100%)',
-                borderRadius: '12px',
-                padding: '16px',
-                border: '1px solid rgba(168, 85, 247, 0.2)'
-              }}>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Frame Time</div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: '#a855f7' }}>
+              <div className="bg-gradient-to-br from-red-500/15 to-red-500/5 rounded-xl p-4 border border-red-500/20">
+                <div className="text-xs text-slate-500 mb-1">0.1% Low FPS</div>
+                <div className="text-[28px] font-bold text-red-500">
+                  {metrics.pointOnePercentLow.toFixed(0)}
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-purple-500/15 to-purple-500/5 rounded-xl p-4 border border-purple-500/20">
+                <div className="text-xs text-slate-500 mb-1">Frame Time</div>
+                <div className="text-[28px] font-bold text-purple-500">
                   {(1000 / metrics.avgFps).toFixed(1)}ms
                 </div>
               </div>
-              <div style={{
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%)',
-                borderRadius: '12px',
-                padding: '16px',
-                border: '1px solid rgba(59, 130, 246, 0.2)'
-              }}>
-                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>CPU Usage</div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: '#3b82f6' }}>
-                  {metrics.cpuUsage}%
+
+              {/* Row 2 */}
+              <div className="bg-gradient-to-br from-blue-500/15 to-blue-500/5 rounded-xl p-4 border border-blue-500/20">
+                <div className="text-xs text-slate-500 mb-1">CPU Usage</div>
+                <div className="text-[28px] font-bold text-blue-500">
+                  {metrics.avgCpuUsage}%
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Game FAQs */}
-          <div style={{
-            background: 'rgba(15, 10, 35, 0.8)',
-            backdropFilter: 'blur(20px)',
-            borderRadius: '20px',
-            padding: '24px',
-            border: '1px solid rgba(139, 92, 246, 0.2)'
-          }}>
-            <h3 style={{ 
-              margin: '0 0 20px 0', 
-              fontSize: '18px', 
-              fontWeight: 600, 
-              color: '#f1f5f9',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '10px'
-            }}>
-              <Info size={20} style={{ color: '#a855f7' }} />
-              Quick Facts
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {(game.faqs || []).map((faq, index) => (
-                <FAQItem 
-                  key={index}
-                  faq={faq}
-                  index={index}
-                  isOpen={openFaqIndex === index}
-                  onToggle={() => setOpenFaqIndex(openFaqIndex === index ? -1 : index)}
-                />
-              ))}
+              <div className="bg-gradient-to-br from-indigo-500/15 to-indigo-500/5 rounded-xl p-4 border border-indigo-500/20">
+                <div className="text-xs text-slate-500 mb-1">GPU Usage</div>
+                <div className="text-[28px] font-bold text-indigo-500">
+                  {metrics.avgGpuUsage}%
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-rose-500/15 to-rose-500/5 rounded-xl p-4 border border-rose-500/20">
+                <div className="text-xs text-slate-500 mb-1">Pkg Temp</div>
+                <div className="text-[28px] font-bold text-rose-500">
+                  {metrics.avgPackageTemp}°C
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-yellow-500/15 to-yellow-500/5 rounded-xl p-4 border border-yellow-500/20">
+                <div className="text-xs text-slate-500 mb-1">Power Draw</div>
+                <div className="text-[28px] font-bold text-yellow-500">
+                  {metrics.avgPower}W
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Frame Time Analysis */}
-        <div style={{ 
-          background: 'rgba(15, 10, 35, 0.7)', 
-          borderRadius: '16px', 
-          padding: '24px', 
-          border: '1px solid rgba(139, 92, 246, 0.15)', 
-          marginBottom: '24px' 
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Clock size={20} style={{ color: '#a855f7' }} />
-              <span style={{ fontSize: '20px', fontWeight: 600, color: '#f1f5f9' }}>Frame Time Analysis</span>
-            </div>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              {frameTimeModes.map(mode => (
-                <button key={mode.id} onClick={() => setFrameTimeMode(mode.id)} style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 500, background: frameTimeMode === mode.id ? `${mode.color}30` : 'rgba(30, 20, 60, 0.5)', color: frameTimeMode === mode.id ? mode.color : '#64748b', transition: 'all 0.2s ease' }}>{mode.label}</button>
-              ))}
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={250}>
-            <AreaChart data={detailedFrameTimeData}>
-              <defs>
-                <linearGradient id="frameTimeGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={currentFrameTimeMode.color} stopOpacity={0.4} />
-                  <stop offset="95%" stopColor={currentFrameTimeMode.color} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.1)" />
-              <XAxis dataKey="frame" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} />
-              <Tooltip content={({ active, payload }) => active && payload?.length ? (
-                <div style={{ background: 'rgba(15, 10, 40, 0.95)', border: `1px solid ${currentFrameTimeMode.color}50`, borderRadius: '8px', padding: '12px 16px' }}>
-                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Frame {payload[0].payload.frame}</p>
-                  <p style={{ fontSize: '16px', color: currentFrameTimeMode.color, margin: 0, fontWeight: 600 }}>{payload[0].value.toFixed(2)} {frameTimeMode === 'fps' || frameTimeMode.includes('percent') || frameTimeMode.includes('Low') ? 'FPS' : 'ms'}</p>
-                </div>
-              ) : null} />
-              <Area type="monotone" dataKey={frameTimeMode} stroke={currentFrameTimeMode.color} strokeWidth={2} fill="url(#frameTimeGrad)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        <FrameTimeChart data={detailedFrameTimeData} />
 
         {/* Per-Core Frequency */}
-        <div style={{ background: 'rgba(15, 10, 35, 0.7)', borderRadius: '16px', padding: '24px', border: '1px solid rgba(139, 92, 246, 0.15)', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <Cpu size={20} style={{ color: '#ec4899' }} />
-            <span style={{ fontSize: '20px', fontWeight: 600, color: '#f1f5f9' }}>Per-Core Frequency</span>
-          </div>
-          <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>P-Cores:</span>
-              {pCores.map((_, i) => (
-                <button key={`p${i}`} onClick={() => toggleCore('p', i)} style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 500, background: selectedCores.pCores.includes(i) ? pCoreColors[i % pCoreColors.length] : 'rgba(30, 20, 60, 0.5)', color: selectedCores.pCores.includes(i) ? '#fff' : '#64748b' }}>P{i}</button>
-              ))}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>E-Cores:</span>
-              {eCores.map((_, i) => (
-                <button key={`e${i}`} onClick={() => toggleCore('e', i)} style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 500, background: selectedCores.eCores.includes(i) ? eCoreColors[i % eCoreColors.length] : 'rgba(30, 20, 60, 0.5)', color: selectedCores.eCores.includes(i) ? '#fff' : '#64748b' }}>E{i}</button>
-              ))}
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={perCoreData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.1)" />
-              <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={[3000, 5800]} />
-              <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
-                <div style={{ background: 'rgba(15, 10, 40, 0.95)', border: '1px solid rgba(236, 72, 153, 0.3)', borderRadius: '8px', padding: '12px 16px', maxHeight: '200px', overflowY: 'auto' }}>
-                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Time: {label}s</p>
-                  {payload.map((entry, i) => <p key={i} style={{ fontSize: '12px', color: entry.color, margin: '2px 0', fontWeight: 500 }}>{entry.name}: {entry.value} MHz</p>)}
-                </div>
-              ) : null} />
-              {selectedCores.pCores.map(i => <Line key={`pCore${i}`} type="monotone" dataKey={`pCore${i}`} name={`P-Core ${i}`} stroke={pCoreColors[i % pCoreColors.length]} strokeWidth={2} dot={false} />)}
-              {selectedCores.eCores.map(i => <Line key={`eCore${i}`} type="monotone" dataKey={`eCore${i}`} name={`E-Core ${i}`} stroke={eCoreColors[i % eCoreColors.length]} strokeWidth={2} dot={false} strokeDasharray="4 2" />)}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <FrequencyChart data={perCoreData} pCores={pCores} eCores={eCores} />
 
         {/* CPU Residency vs. Relative Time - Full width */}
-        <div style={{ background: 'rgba(15, 10, 35, 0.7)', borderRadius: '16px', padding: '24px', border: '1px solid rgba(139, 92, 246, 0.15)', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <Activity size={20} style={{ color: '#3b82f6' }} />
-            <span style={{ fontSize: '20px', fontWeight: 600, color: '#f1f5f9' }}>CPU Residency vs. Relative Time</span>
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <ComposedChart data={cpuResidencyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.1)" />
-              <XAxis 
-                dataKey="time" 
-                tick={{ fontSize: 10, fill: '#64748b' }} 
-                axisLine={false} 
-                tickLine={false}
-                tickFormatter={(value) => `${Math.round(value / 1000)}k`}
-              />
-              <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} domain={[0, 'auto']} />
-              <Tooltip content={<CpuResidencyTooltip />} />
-              <Line type="monotone" dataKey="trendLine" name="Trend" stroke="#3b82f6" strokeWidth={2} dot={false} />
-              <Scatter dataKey="residency" name="Residency" fill="#3b82f6" />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+        <CpuResidencyChart data={cpuResidencyData} />
 
         {/* Performance Capability & C-State - Full width */}
-        <div style={{ background: 'rgba(15, 10, 35, 0.7)', borderRadius: '16px', padding: '24px', border: '1px solid rgba(139, 92, 246, 0.15)', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <Gauge size={20} style={{ color: '#10b981' }} />
-            <span style={{ fontSize: '20px', fontWeight: 600, color: '#f1f5f9' }}>Performance Capability & C-State</span>
-            {/* Legends */}
-            <div style={{ display: 'flex', gap: '16px', marginLeft: 'auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: 20, height: 3, background: '#10b981', borderRadius: '2px' }} />
-                <span style={{ fontSize: '11px', color: '#64748b' }}>Capability</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#06b6d4' }} />
-                <span style={{ fontSize: '11px', color: '#64748b' }}>C0 Active</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b' }} />
-                <span style={{ fontSize: '11px', color: '#64748b' }}>C1</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#8b5cf6' }} />
-                <span style={{ fontSize: '11px', color: '#64748b' }}>C6</span>
-              </div>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={180}>
-            <ComposedChart data={performanceCapabilityData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.1)" />
-              <XAxis 
-                dataKey="time" 
-                tick={{ fontSize: 10, fill: '#64748b' }} 
-                axisLine={false} 
-                tickLine={false}
-                tickFormatter={(value) => `${Math.round(value / 1000)}k`}
-              />
-              <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} domain={[0, 120]} />
-              <Tooltip content={<PerformanceCapabilityTooltip />} />
-              <Line type="monotone" dataKey="capability" name="Capability" stroke="#10b981" strokeWidth={2} dot={false} />
-              <Scatter dataKey="c0Active" name="C0 Active" fill="#06b6d4" />
-              <Scatter dataKey="c1" name="C1" fill="#f59e0b" />
-              <Scatter dataKey="c6" name="C6" fill="#8b5cf6" />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+        <PerformanceCapabilityChart data={performanceCapabilityData} />
 
         {/* IA Clip Reason */}
-        <div style={{ background: 'rgba(15, 10, 35, 0.7)', borderRadius: '16px', padding: '24px', border: '1px solid rgba(139, 92, 246, 0.15)', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <AlertTriangle size={20} style={{ color: '#ec4899' }} />
-            <span style={{ fontSize: '20px', fontWeight: 600, color: '#f1f5f9' }}>IA Clip Reason</span>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <ScatterChart margin={{ left: 20, right: 20, top: 10, bottom: 10 }}>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="rgba(139, 92, 246, 0.1)" 
-              />
-              <XAxis 
-                dataKey="time" 
-                type="number" 
-                tick={{ fontSize: 10, fill: '#64748b' }} 
-                axisLine={false} 
-                tickLine={false} 
-                domain={[0, 60000]}
-                ticks={[0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 28000, 29000, 30000, 31000, 32000, 33000, 34000, 35000, 36000, 37000, 38000, 39000, 40000, 41000, 42000, 43000, 44000, 45000, 46000, 47000, 48000, 49000, 50000, 51000, 52000, 53000, 54000, 55000, 56000, 57000, 58000, 59000, 60000]}
-                tickFormatter={(value) => `${Math.round(value / 1000)}k`}
-                interval={0}
-              />
-              <YAxis 
-                type="category" 
-                dataKey="reason" 
-                tick={{ fontSize: 10, fill: '#64748b' }} 
-                axisLine={false} 
-                tickLine={false} 
-                width={100}
-                allowDuplicatedCategory={false}
-              />
-              <Tooltip content={({ active, payload }) => active && payload?.length ? (
-                <div style={{ background: 'rgba(15, 10, 40, 0.95)', border: '1px solid rgba(236, 72, 153, 0.5)', borderRadius: '8px', padding: '12px 16px' }}>
-                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Time: {(payload[0].payload.time / 1000).toFixed(1)}s ({payload[0].payload.time.toLocaleString()} ms)</p>
-                  <p style={{ fontSize: '14px', color: clipReasonColors[payload[0].payload.reason], margin: 0, fontWeight: 600 }}>{payload[0].payload.reason}</p>
-                </div>
-              ) : null} />
-              <Scatter data={clipReasonData} shape={(props) => props.cx && props.cy ? <circle cx={props.cx} cy={props.cy} r={5} fill={clipReasonColors[props.payload.reason] || '#ec4899'} fillOpacity={0.9} /> : null} />
-            </ScatterChart>
-          </ResponsiveContainer>
-        </div>
+        <ClipReasonChart data={clipReasonData} />
 
         {/* Per-Core Temperature */}
-        <div style={{ background: 'rgba(15, 10, 35, 0.7)', borderRadius: '16px', padding: '24px', border: '1px solid rgba(139, 92, 246, 0.15)', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <Thermometer size={20} style={{ color: '#f43f5e' }} />
-            <span style={{ fontSize: '20px', fontWeight: 600, color: '#f1f5f9' }}>Per-Core Temperature</span>
-          </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '16px' }}>
-            {Array.from({ length: Math.min(tempCoreCount, 16) }, (_, i) => (
-              <button key={`temp${i}`} onClick={() => toggleTempCore(i)} style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 500, background: selectedTempCores.includes(i) ? tempCoreColors[i % tempCoreColors.length] : 'rgba(30, 20, 60, 0.5)', color: selectedTempCores.includes(i) ? '#fff' : '#64748b' }}>C{i}</button>
-            ))}
-            <button onClick={() => toggleTempCore('package')} style={{ padding: '4px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 600, background: selectedTempCores.includes('package') ? '#f43f5e' : 'rgba(30, 20, 60, 0.5)', color: selectedTempCores.includes('package') ? '#fff' : '#64748b' }}>Package</button>
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={perCoreTemperatureData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.1)" />
-              <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={[55, 100]} />
-              <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
-                <div style={{ background: 'rgba(15, 10, 40, 0.95)', border: '1px solid rgba(244, 63, 94, 0.3)', borderRadius: '8px', padding: '12px 16px', maxHeight: '200px', overflowY: 'auto' }}>
-                  <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '8px' }}>Time: {label}s</p>
-                  {payload.map((entry, i) => <p key={i} style={{ fontSize: '12px', color: entry.color, margin: '2px 0', fontWeight: 500 }}>{entry.name}: {entry.value}°C</p>)}
-                </div>
-              ) : null} />
-              {selectedTempCores.filter(c => c !== 'package').map(i => <Line key={`core${i}`} type="monotone" dataKey={`core${i}`} name={`Core ${i}`} stroke={tempCoreColors[i % tempCoreColors.length]} strokeWidth={1.5} dot={false} />)}
-              {selectedTempCores.includes('package') && <Line type="monotone" dataKey="package" name="Package" stroke="#f43f5e" strokeWidth={3} dot={false} />}
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <TemperatureChart data={perCoreTemperatureData} tempCoreCount={tempCoreCount} />
 
         {/* Power */}
-        <div style={{ background: 'rgba(15, 10, 35, 0.7)', borderRadius: '16px', padding: '24px', border: '1px solid rgba(139, 92, 246, 0.15)', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <Zap size={20} style={{ color: '#f59e0b' }} />
-            <span style={{ fontSize: '20px', fontWeight: 600, color: '#f1f5f9' }}>Power Analysis</span>
-          </div>
-          <ResponsiveContainer width="100%" height={220}>
-            <ComposedChart data={powerData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.1)" />
-              <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={[0, 120]} />
-              <Tooltip content={<PowerAnalysisTooltip />} />
-              <Scatter dataKey="iaPower" name="IA Power" fill="#3b82f6" />
-              <Scatter dataKey="packagePower" name="Package Power" fill="#7c3aed" />
-              <Line type="monotone" dataKey="iaTrendLine" name="IA Trend" stroke="#1e40af" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="pkgTrendLine" name="Pkg Trend" stroke="#4c1d95" strokeWidth={2} dot={false} />
-            </ComposedChart>
-          </ResponsiveContainer>
-        </div>
+        <PowerChart data={powerData} />
 
         {/* Build Trend */}
-        <div style={{ background: 'rgba(15, 10, 35, 0.7)', borderRadius: '16px', padding: '24px', border: '1px solid rgba(139, 92, 246, 0.15)', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <Activity size={20} style={{ color: '#10b981' }} />
-            <span style={{ fontSize: '20px', fontWeight: 600, color: '#f1f5f9' }}>Build-over-Build Trend</span>
-            <DeltaBadge delta={delta} deltaPercent={deltaPercent} />
-          </div>
-          <ResponsiveContainer width="100%" height={150}>
-            <AreaChart data={trendData}>
-              <defs>
-                <linearGradient id="detailTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={delta >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0.4} />
-                  <stop offset="95%" stopColor={delta >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.1)" />
-              <XAxis dataKey="build" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} />
-              <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={['dataMin - 10', 'dataMax + 10']} />
-              <Tooltip content={<TrendTooltip />} />
-              <Area type="monotone" dataKey="avgFps" stroke={delta >= 0 ? '#10b981' : '#ef4444'} strokeWidth={3} fill="url(#detailTrendGrad)" dot={{ r: 6, fill: delta >= 0 ? '#10b981' : '#ef4444', strokeWidth: 2, stroke: '#fff' }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        <TrendChart data={trendData} delta={delta} deltaPercent={deltaPercent} />
 
         {/* System Configuration */}
-        <div style={{ marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <Settings size={20} style={{ color: '#a855f7' }} />
-            <span style={{ fontSize: '20px', fontWeight: 600, color: '#f1f5f9' }}>System Configuration</span>
+        <div className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Settings size={20} className="text-primary" />
+            <span className="text-xl font-semibold text-slate-50">System Configuration</span>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+          <div className="grid grid-cols-3 gap-4">
             <ConfigSection title="CPU" icon={Cpu}>
               <ConfigRow label="Processor" value={systemConfig.cpu.name} highlight="#a855f7" />
               <ConfigRow label="Cores" value={systemConfig.cpu.cores} />

@@ -31,99 +31,73 @@ const LandingPage = ({ onNavigate }) => {
   const skuData = getAllSkuData();
 
   return (
-    <div style={{ padding: '32px' }}>
-      <div style={{ marginBottom: '40px', textAlign: 'center' }}>
-        <h1 style={{
-          margin: 0,
-          fontSize: '40px',
-          fontWeight: 700,
-          background: 'linear-gradient(90deg, #a855f7, #06b6d4)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          marginBottom: '8px'
-        }}>
+    <div className="p-8">
+      <div className="mb-10 text-center">
+        <h1 className="m-0 text-[40px] font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
           Performance Index Trends Across SKUs
         </h1>
-        <p style={{ margin: 0, fontSize: '16px', color: '#64748b' }}>
+        <p className="m-0 text-base text-slate-500">
           Aggregate gaming performance index across all {games.length} games
         </p>
       </div>
 
       {programs.map(program => (
-        <div key={program.id} style={{ marginBottom: '40px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <span style={{ fontSize: '28px' }}>{program.icon}</span>
-            <h2 style={{ margin: 0, fontSize: '26px', fontWeight: 600, color: '#f1f5f9' }}>
+        <div key={program.id} className="mb-10">
+          <div className="flex items-center gap-3 mb-5">
+            <span className="text-3xl">{program.icon}</span>
+            <h2 className="m-0 text-2xl font-semibold text-slate-50">
               {program.name}
             </h2>
-            <span style={{
-              fontSize: '13px',
-              padding: '4px 10px',
-              borderRadius: '6px',
-              fontWeight: 600,
-              background: `${program.color}20`,
-              color: program.color
-            }}>
+            <span
+              className="text-[13px] px-2.5 py-1 rounded-md font-semibold"
+              style={{ background: `${program.color}20`, color: program.color }}
+            >
               {program.codename}
             </span>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: `repeat(${Math.min(program.skus.length, 4)}, 1fr)`,
-            gap: '16px'
-          }}>
+          <div
+            className="grid gap-4"
+            style={{ gridTemplateColumns: `repeat(${Math.min(program.skus.length, 4)}, 1fr)` }}
+          >
             {skuData.filter(d => d.program.id === program.id).map(({ sku, buildData, latestIndex, delta, deltaPercent }) => (
               <div
                 key={sku.id}
                 onClick={() => onNavigate(program, sku)}
-                style={{
-                  background: 'rgba(20, 15, 45, 0.6)',
-                  borderRadius: '16px',
-                  padding: '20px',
-                  border: '1px solid rgba(139, 92, 246, 0.15)',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease'
-                }}
+                className="bg-[#140f2d]/60 rounded-2xl p-5 border border-primary/15 cursor-pointer transition-all duration-300 hover:-translate-y-0.5 group"
+                style={{ borderColor: 'rgba(139, 92, 246, 0.15)' }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = `${program.color}50`;
-                  e.currentTarget.style.transform = 'translateY(-2px)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(139, 92, 246, 0.15)';
-                  e.currentTarget.style.transform = 'translateY(0)';
                 }}
               >
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: '16px'
-                }}>
+                <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: program.color }}>
+                    <h3 className="m-0 text-xl font-bold" style={{ color: program.color }}>
                       {sku.name}
                     </h3>
-                    <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
+                    <p className="m-0 mt-1 text-[13px] text-slate-500">
                       {sku.fullName}
                     </p>
                   </div>
                   <DeltaBadge delta={delta} deltaPercent={deltaPercent} />
                 </div>
 
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', marginBottom: '4px' }}>
+                <div className="mb-4">
+                  <div className="text-xs text-slate-500 uppercase mb-1">
                     Performance Index
                   </div>
-                  <div style={{ fontSize: '42px', fontWeight: 700, color: '#f1f5f9', lineHeight: 1 }}>
+                  <div className="text-[42px] font-bold text-slate-50 leading-none">
                     {latestIndex}
                   </div>
-                  <div style={{ fontSize: '13px', color: '#64748b' }}>
+                  <div className="text-[13px] text-slate-500">
                     avg FPS across {games.length} games
                   </div>
                 </div>
 
-                <div style={{ height: '60px', marginBottom: '12px' }}>
+                <div className="h-[60px] mb-3">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={buildData}>
                       <defs>
@@ -135,16 +109,11 @@ const LandingPage = ({ onNavigate }) => {
                       <XAxis dataKey="build" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
                       <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
                       <Tooltip content={({ active, payload }) => active && payload?.length ? (
-                        <div style={{
-                          background: 'rgba(15, 10, 40, 0.95)',
-                          border: `1px solid ${program.color}50`,
-                          borderRadius: '8px',
-                          padding: '8px 12px'
-                        }}>
-                          <p style={{ fontSize: '10px', color: program.color, marginBottom: '4px', fontWeight: 600 }}>
+                        <div className="bg-[#0f0a28]/95 border rounded-lg p-2 px-3" style={{ borderColor: `${program.color}50` }}>
+                          <p className="text-[10px] font-semibold mb-1" style={{ color: program.color }}>
                             Build {payload[0].payload.build}
                           </p>
-                          <p style={{ fontSize: '14px', color: '#f1f5f9', margin: 0, fontWeight: 700 }}>
+                          <p className="text-sm font-bold text-slate-50 m-0">
                             {payload[0].value} avg FPS
                           </p>
                         </div>
@@ -161,23 +130,11 @@ const LandingPage = ({ onNavigate }) => {
                   </ResponsiveContainer>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <span style={{
-                    fontSize: '12px',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    background: 'rgba(139, 92, 246, 0.1)',
-                    color: '#94a3b8'
-                  }}>
+                <div className="flex gap-2">
+                  <span className="text-xs px-2.5 py-1 rounded-md bg-primary/10 text-slate-400">
                     {sku.cores}
                   </span>
-                  <span style={{
-                    fontSize: '12px',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    background: 'rgba(139, 92, 246, 0.1)',
-                    color: '#94a3b8'
-                  }}>
+                  <span className="text-xs px-2.5 py-1 rounded-md bg-primary/10 text-slate-400">
                     {sku.tdp}
                   </span>
                 </div>

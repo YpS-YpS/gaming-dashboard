@@ -5,54 +5,34 @@ const SKUCard = ({ sku, program, isSelected, onClick }) => {
   return (
     <div
       onClick={onClick}
-      style={{
-        padding: '16px',
-        borderRadius: '12px',
-        cursor: 'pointer',
-        transition: 'all 0.3s ease',
-        background: isSelected
-          ? `linear-gradient(135deg, ${program.color}20, rgba(20, 15, 45, 0.8))`
-          : 'rgba(20, 15, 45, 0.4)',
-        border: isSelected
-          ? `1px solid ${program.color}50`
-          : '1px solid rgba(139, 92, 246, 0.1)'
-      }}
+      className={`
+        p-4 rounded-xl cursor-pointer transition-all duration-300
+        ${isSelected
+          ? 'bg-gradient-to-br from-primary/20 to-[#140f2d]/80 border border-primary/50'
+          : 'bg-[#140f2d]/40 border border-primary/10 hover:border-primary/30'}
+      `}
+      style={isSelected ? {
+        backgroundImage: `linear-gradient(135deg, ${program.color}20, rgba(20, 15, 45, 0.8))`,
+        borderColor: `${program.color}50`
+      } : {}}
     >
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: '8px'
-      }}>
-        <span style={{
-          fontSize: '18px',
-          fontWeight: 700,
-          color: isSelected ? program.color : '#94a3b8'
-        }}>
+      <div className="flex items-center justify-between mb-2">
+        <span
+          className={`text-lg font-bold ${isSelected ? '' : 'text-slate-400'}`}
+          style={isSelected ? { color: program.color } : {}}
+        >
           {sku.name}
         </span>
         {isSelected && <ChevronRight size={16} style={{ color: program.color }} />}
       </div>
-      <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 8px 0' }}>
+      <p className="text-sm text-slate-500 m-0 mb-2">
         {sku.fullName}
       </p>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <span style={{
-          fontSize: '12px',
-          padding: '3px 8px',
-          borderRadius: '6px',
-          background: 'rgba(139, 92, 246, 0.1)',
-          color: '#94a3b8'
-        }}>
+      <div className="flex gap-2">
+        <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-slate-400">
           {sku.cores}
         </span>
-        <span style={{
-          fontSize: '12px',
-          padding: '3px 8px',
-          borderRadius: '6px',
-          background: 'rgba(139, 92, 246, 0.1)',
-          color: '#94a3b8'
-        }}>
+        <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-slate-400">
           {sku.tdp}
         </span>
       </div>
