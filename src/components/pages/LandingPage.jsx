@@ -4,7 +4,7 @@ import { programs, builds, games } from '../../data';
 import { calculatePerformanceIndex } from '../../utils';
 import DeltaBadge from '../common/DeltaBadge';
 
-const LandingPage = ({ onNavigate }) => {
+const LandingPage = ({ onNavigate, isReady = true }) => {
   const getAllSkuData = () => {
     const data = [];
     programs.forEach(program => {
@@ -33,7 +33,7 @@ const LandingPage = ({ onNavigate }) => {
   return (
     <div className="p-8">
       <div className="mb-10 text-center">
-        <h1 className="m-0 text-[40px] font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+        <h1 className="m-0 text-5xl md:text-7xl font-black bg-gradient-to-r from-[#d946ef] via-white to-[#7c3aed] bg-clip-text text-transparent mb-4 tracking-tight drop-shadow-2xl">
           Performance Index Trends Across SKUs
         </h1>
         <p className="m-0 text-base text-slate-500">
@@ -98,36 +98,40 @@ const LandingPage = ({ onNavigate }) => {
                 </div>
 
                 <div className="h-[60px] mb-3">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={buildData}>
-                      <defs>
-                        <linearGradient id={`landingGrad-${sku.id}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={program.color} stopOpacity={0.3} />
-                          <stop offset="95%" stopColor={program.color} stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <XAxis dataKey="build" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                      <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
-                      <Tooltip content={({ active, payload }) => active && payload?.length ? (
-                        <div className="bg-[#0f0a28]/95 border rounded-lg p-2 px-3" style={{ borderColor: `${program.color}50` }}>
-                          <p className="text-[10px] font-semibold mb-1" style={{ color: program.color }}>
-                            Build {payload[0].payload.build}
-                          </p>
-                          <p className="text-sm font-bold text-slate-50 m-0">
-                            {payload[0].value} avg FPS
-                          </p>
-                        </div>
-                      ) : null} />
-                      <Area
-                        type="monotone"
-                        dataKey="index"
-                        stroke={program.color}
-                        strokeWidth={2}
-                        fill={`url(#landingGrad-${sku.id})`}
-                        dot={{ r: 3, fill: program.color, strokeWidth: 0 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  {isReady && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={buildData}>
+                        <defs>
+                          <linearGradient id={`landingGrad-${sku.id}`} x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={program.color} stopOpacity={0.3} />
+                            <stop offset="95%" stopColor={program.color} stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="build" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                        <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
+                        <Tooltip content={({ active, payload }) => active && payload?.length ? (
+                          <div className="bg-[#0f0a28]/95 border rounded-lg p-2 px-3" style={{ borderColor: `${program.color}50` }}>
+                            <p className="text-[10px] font-semibold mb-1" style={{ color: program.color }}>
+                              Build {payload[0].payload.build}
+                            </p>
+                            <p className="text-sm font-bold text-slate-50 m-0">
+                              {payload[0].value} avg FPS
+                            </p>
+                          </div>
+                        ) : null} />
+                        <Area
+                          type="monotone"
+                          dataKey="index"
+                          stroke={program.color}
+                          strokeWidth={2}
+                          fill={`url(#landingGrad-${sku.id})`}
+                          dot={{ r: 3, fill: program.color, strokeWidth: 0 }}
+                          animationDuration={1500}
+                          animationEasing="ease-out"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
 
                 <div className="flex gap-2">

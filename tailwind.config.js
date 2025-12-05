@@ -14,6 +14,11 @@ export default {
         surface: '#140f2d',
         primary: '#a855f7',
         secondary: '#06b6d4',
+        'brand-dark': '#000814',
+        'brand-purple': '#2e1065',
+        'brand-violet': '#7c3aed',
+        'brand-cyan': '#00C7FD',
+        'brand-pink': '#d946ef',
       }
     },
   },

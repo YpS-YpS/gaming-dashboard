@@ -1,5 +1,5 @@
 import React, { useState, useMemo, Component } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Gauge, Settings, Monitor, HardDrive, MemoryStick, Layers, ChevronDown, ChevronUp, Timer, Code2, Gamepad2, Info, Cpu } from 'lucide-react';
 import { programs, getGameImageUrl } from '../../data';
 import {
@@ -129,6 +129,8 @@ const TechBadge = ({ icon: Icon, label, value, color }) => (
 
 const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
   const navigate = useNavigate();
+  const { programId } = useParams();
+  const [searchParams] = useSearchParams();
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const [heroLoaded, setHeroLoaded] = useState(false);
   const [heroError, setHeroError] = useState(false);
@@ -153,7 +155,10 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
   React.useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        navigate(-1);
+        // Navigate to the SKU dashboard, preserving the build query param if it exists
+        const buildParam = searchParams.get('build');
+        const targetUrl = `/program/${programId}/sku/${skuId}${buildParam ? `?build=${buildParam}` : ''}`;
+        navigate(targetUrl);
       }
     };
     window.addEventListener('keydown', handleKeyDown);

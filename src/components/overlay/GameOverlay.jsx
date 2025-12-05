@@ -178,19 +178,19 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
             </div>
             <button
               onClick={onClose}
-              className="ml-2 p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
+              className="ml-4 w-10 h-10 rounded-full border-none bg-red-500 shadow-lg cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red-600 hover:scale-110 active:scale-90 group"
             >
               <span className="sr-only">Close</span>
-              <X size={20} />
+              <X size={20} className="text-white transition-transform duration-200 group-hover:rotate-90" />
             </button>
           </div>
         </div>
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="fixed top-5 right-5 z-[1001] w-11 h-11 rounded-xl border-none bg-red-500/15 cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red-500/30 group"
+          className="fixed top-6 right-6 z-[1001] w-12 h-12 rounded-full border-none bg-red-500 shadow-lg cursor-pointer flex items-center justify-center transition-all duration-200 hover:bg-red-600 hover:scale-110 active:scale-90 group"
         >
-          <X size={22} className="text-red-500" />
+          <X size={24} className="text-white transition-transform duration-200 group-hover:rotate-90" />
         </button>
 
         <DetailedAnalysisPage game={game} skuId={skuId} buildId={buildId} />
