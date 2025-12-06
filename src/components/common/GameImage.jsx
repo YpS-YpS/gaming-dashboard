@@ -29,6 +29,17 @@ const GameImage = ({
   const isPortrait = type === 'library';
 
   // Calculate dimensions
+  // If size is passed, we treat it as the primary dimension (width for landscape, height for portrait if not specified)
+  // BUT for GameCard usage, we want 'size' to be the height, and width to scale.
+  // Wait, the previous logic was: width = isPortrait ? size : size * aspectRatio; height = isPortrait ? size / aspectRatio : size;
+  // This means 'size' is the HEIGHT for landscape images (header/capsule).
+
+  // If the user passes a large size (e.g. 140), the width becomes 140 * 2.14 = ~300px.
+  // This seems correct for a large icon.
+
+  // However, if the container in GameCard constrains it, that might be the issue.
+  // Let's check GameCard again. It puts GameImage in a flex container.
+
   const width = isPortrait ? size : size * aspectRatio;
   const height = isPortrait ? size / aspectRatio : size;
 

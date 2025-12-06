@@ -8,7 +8,7 @@ import DeltaBadge from '../common/DeltaBadge';
 import GameImage from '../common/GameImage';
 import MetricCard from './MetricCard';
 
-const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, onOpenDetail }) => {
+const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, onOpenDetail, iconSize = 48, animationDelay = 0 }) => {
   const frameTimeData = useMemo(() => generateFrameTimeData(), []);
   const frequencyData = useMemo(() => generateFrequencyData(), []);
   const tempData = useMemo(() => generateTempData(), []);
@@ -16,6 +16,15 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
     () => getBuildTrend(game.id, skuId, currentBuild),
     [game.id, skuId, currentBuild]
   );
+
+  const [loading, setLoading] = React.useState(!!animationDelay);
+
+  React.useEffect(() => {
+    if (animationDelay) {
+      const timer = setTimeout(() => setLoading(false), animationDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [animationDelay]);
 
   return (
     <div className={`
@@ -30,7 +39,7 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
         className="p-6 flex items-center justify-between cursor-pointer"
       >
         <div className="flex items-center gap-4 flex-1">
-          <GameImage game={game} size={48} borderRadius={12} />
+          <GameImage game={game} size={iconSize} borderRadius={12} style={{ height: iconSize }} />
           <div className="min-w-[200px]">
             <h3 className="m-0 text-[17px] font-semibold text-slate-50">
               {game.name}
@@ -46,7 +55,11 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
               <div className="text-[11px] text-slate-500 uppercase tracking-wider mb-0.5">
                 Last 4 Builds
               </div>
-              <TrendSparkline data={trendData} delta={delta} />
+              {loading ? (
+                <div className="w-20 h-8 bg-white/5 animate-pulse rounded" />
+              ) : (
+                <TrendSparkline data={trendData} delta={delta} />
+              )}
             </div>
             <DeltaBadge delta={delta} deltaPercent={deltaPercent} />
           </div>
@@ -109,27 +122,34 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
             </div>
             <div className="flex items-center gap-6">
               <div className="flex-1 h-[60px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData}>
-                    <defs>
-                      <linearGradient id={`trendGrad-${game.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={delta >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0.3} />
-                        <stop offset="95%" stopColor={delta >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="build" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
-                    <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
-                    <Tooltip content={<TrendTooltip />} />
-                    <Area
-                      type="monotone"
-                      dataKey="avgFps"
-                      stroke={delta >= 0 ? '#10b981' : '#ef4444'}
-                      strokeWidth={2}
-                      fill={`url(#trendGrad-${game.id})`}
-                      dot={{ r: 4, fill: delta >= 0 ? '#10b981' : '#ef4444', strokeWidth: 0 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                {loading ? (
+                  <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={trendData} key={game.id}>
+                      <defs>
+                        <linearGradient id={`trendGrad-${game.id}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={delta >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0.3} />
+                          <stop offset="95%" stopColor={delta >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="build" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                      <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
+                      <Tooltip content={<TrendTooltip />} />
+                      <Area
+                        type="monotone"
+                        dataKey="avgFps"
+                        stroke={delta >= 0 ? '#10b981' : '#ef4444'}
+                        strokeWidth={2}
+                        fill={`url(#trendGrad-${game.id})`}
+                        dot={{ r: 4, fill: delta >= 0 ? '#10b981' : '#ef4444', strokeWidth: 0 }}
+                        isAnimationActive={true}
+                        animationDuration={2000}
+                        animationEasing="ease-in-out"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                )}
               </div>
               <div className="flex gap-4">
                 {trendData.map((d, i) => (
@@ -163,18 +183,32 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <span className="text-[15px] font-medium text-slate-200">Frame Time</span>
               </div>
               <ResponsiveContainer width="100%" height={100}>
-                <AreaChart data={frameTimeData}>
-                  <defs>
-                    <linearGradient id="ftGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="frame" hide />
-                  <YAxis domain={[0, 30]} hide />
-                  <Tooltip content={<CustomTooltip unit="ms" />} />
-                  <Area type="monotone" dataKey="frameTime" stroke="#a855f7" strokeWidth={1.5} fill="url(#ftGrad)" name="Frame Time" />
-                </AreaChart>
+                {loading ? (
+                  <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
+                ) : (
+                  <AreaChart data={frameTimeData} key={`ft-${game.id}`}>
+                    <defs>
+                      <linearGradient id="ftGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="frame" hide />
+                    <YAxis domain={[0, 30]} hide />
+                    <Tooltip content={<CustomTooltip unit="ms" />} />
+                    <Area
+                      type="monotone"
+                      dataKey="frameTime"
+                      stroke="#a855f7"
+                      strokeWidth={1.5}
+                      fill="url(#ftGrad)"
+                      name="Frame Time"
+                      isAnimationActive={true}
+                      animationDuration={2000}
+                      animationEasing="ease-in-out"
+                    />
+                  </AreaChart>
+                )}
               </ResponsiveContainer>
             </div>
 
@@ -185,14 +219,18 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <span className="text-[15px] font-medium text-slate-200">CPU Frequency</span>
               </div>
               <ResponsiveContainer width="100%" height={100}>
-                <LineChart data={frequencyData}>
-                  <XAxis dataKey="time" hide />
-                  <YAxis domain={[3000, 6000]} hide />
-                  <Tooltip content={<CustomTooltip unit=" MHz" />} />
-                  <Line type="monotone" dataKey="pCore0" stroke="#06b6d4" strokeWidth={1.5} dot={false} name="P-Core 0" />
-                  <Line type="monotone" dataKey="pCore1" stroke="#22d3ee" strokeWidth={1.5} dot={false} name="P-Core 1" />
-                  <Line type="monotone" dataKey="eCore0" stroke="#a855f7" strokeWidth={1.5} dot={false} name="E-Core 0" />
-                </LineChart>
+                {loading ? (
+                  <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
+                ) : (
+                  <LineChart data={frequencyData} key={`freq-${game.id}`}>
+                    <XAxis dataKey="time" hide />
+                    <YAxis domain={[3000, 6000]} hide />
+                    <Tooltip content={<CustomTooltip unit=" MHz" />} />
+                    <Line type="monotone" dataKey="pCore0" stroke="#06b6d4" strokeWidth={1.5} dot={false} name="P-Core 0" isAnimationActive={true} animationDuration={2000} animationEasing="ease-in-out" />
+                    <Line type="monotone" dataKey="pCore1" stroke="#22d3ee" strokeWidth={1.5} dot={false} name="P-Core 1" isAnimationActive={true} animationDuration={2200} animationEasing="ease-in-out" />
+                    <Line type="monotone" dataKey="eCore0" stroke="#a855f7" strokeWidth={1.5} dot={false} name="E-Core 0" isAnimationActive={true} animationDuration={2400} animationEasing="ease-in-out" />
+                  </LineChart>
+                )}
               </ResponsiveContainer>
             </div>
 
@@ -203,18 +241,32 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <span className="text-[15px] font-medium text-slate-200">Temperature</span>
               </div>
               <ResponsiveContainer width="100%" height={100}>
-                <AreaChart data={tempData}>
-                  <defs>
-                    <linearGradient id="tempGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="time" hide />
-                  <YAxis domain={[40, 100]} hide />
-                  <Tooltip content={<CustomTooltip unit="°C" />} />
-                  <Area type="monotone" dataKey="package" stroke="#f43f5e" strokeWidth={1.5} fill="url(#tempGrad)" name="Package" />
-                </AreaChart>
+                {loading ? (
+                  <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
+                ) : (
+                  <AreaChart data={tempData} key={`temp-${game.id}`}>
+                    <defs>
+                      <linearGradient id="tempGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="time" hide />
+                    <YAxis domain={[40, 100]} hide />
+                    <Tooltip content={<CustomTooltip unit="°C" />} />
+                    <Area
+                      type="monotone"
+                      dataKey="package"
+                      stroke="#f43f5e"
+                      strokeWidth={1.5}
+                      fill="url(#tempGrad)"
+                      name="Package"
+                      isAnimationActive={true}
+                      animationDuration={2000}
+                      animationEasing="ease-in-out"
+                    />
+                  </AreaChart>
+                )}
               </ResponsiveContainer>
             </div>
           </div>

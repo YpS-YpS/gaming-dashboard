@@ -22,9 +22,12 @@ const PageLoader = () => (
 import SplashPage from './components/pages/SplashPage';
 import Sidebar from './components/layout/Sidebar';
 
+import DemoMode from './components/demo/DemoMode';
+
 export default function GamingDashboard() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -56,6 +59,8 @@ export default function GamingDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-background via-[#1a0f2e] to-[#0d0a18] text-white font-sans overflow-hidden">
       {showSplash && <SplashPage onComplete={() => setShowSplash(false)} />}
 
+      <DemoMode isActive={isDemoMode} onClose={() => setIsDemoMode(false)} />
+
       {/* Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
         <div className="absolute -top-[20%] left-[10%] w-[600px] h-[600px] bg-primary/15 rounded-full blur-3xl" />
@@ -74,6 +79,7 @@ export default function GamingDashboard() {
           handleProgramSelect={handleProgramSelect}
           handleNavigateToLanding={handleNavigateToLanding}
           isProgramActive={isProgramActive}
+          onStartDemo={() => setIsDemoMode(true)}
         />
 
         {/* Main Content */}

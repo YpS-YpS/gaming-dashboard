@@ -12,6 +12,7 @@ A high-performance, React-based dashboard for tracking and analyzing gaming perf
 -   **Build Selection**: Compare performance across different software builds directly from the sidebar.
 -   **Lazy Loading**: Optimized route loading for fast initial startup.
 -   **Interactive Charts**: Dynamic visualization using Recharts for frame times, trends, and hardware stats.
+-   **Demo Mode**: A hands-free, cinematic showcase mode optimized for large screens (TVs), featuring auto-cycling games, "curtain" transitions, and large-scale visuals.
 -   **"Did You Know?"**: Fun facts for all 38 supported games.
 
 ## 🛠️ Tech Stack

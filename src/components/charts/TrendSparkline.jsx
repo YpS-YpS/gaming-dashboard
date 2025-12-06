@@ -2,7 +2,7 @@ import React from 'react';
 import { LineChart, Line, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import TrendTooltip from './tooltips/TrendTooltip';
 
-const TrendSparkline = ({ data, delta }) => {
+const TrendSparkline = ({ data, delta, animationDelay = 0 }) => {
   const minFps = Math.min(...data.map(d => d.avgFps));
   const maxFps = Math.max(...data.map(d => d.avgFps));
   const color = delta >= 0 ? '#10b981' : '#ef4444';
@@ -19,6 +19,9 @@ const TrendSparkline = ({ data, delta }) => {
             stroke={color}
             strokeWidth={2}
             dot={{ r: 2, fill: color }}
+            isAnimationActive={true}
+            animationDuration={1500}
+            animationBegin={animationDelay}
           />
         </LineChart>
       </ResponsiveContainer>

@@ -127,7 +127,7 @@ const TechBadge = ({ icon: Icon, label, value, color }) => (
   </div>
 );
 
-const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
+const DetailedAnalysisPage = ({ game, skuId, buildId, isDemoMode = false }) => {
   const navigate = useNavigate();
   const { programId } = useParams();
   const [searchParams] = useSearchParams();
@@ -201,7 +201,7 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white font-space">
       {/* Hero Section with Game Backdrop */}
-      <div className="relative min-h-[420px] overflow-hidden">
+      <div className={`relative overflow-hidden transition-all duration-500 ${isDemoMode ? 'min-h-[75vh]' : 'min-h-[420px]'}`}>
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           {(heroUrl || fallbackUrl) && (
@@ -216,9 +216,10 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
                 }
               }}
               className={`
-                w-full h-full object-cover object-top transition-opacity duration-700
+                w-full h-full object-cover object-top transition-all duration-[20s] ease-linear
                 ${heroLoaded ? 'opacity-70' : 'opacity-0'}
                 ${heroError ? 'blur-sm scale-110' : 'scale-100'}
+                ${isDemoMode ? 'scale-110 animate-[kenburns_20s_ease-in-out_infinite_alternate]' : ''}
               `}
             />
           )}
@@ -233,12 +234,12 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
         />
 
         {/* Hero Content */}
-        <div className="relative z-[2] p-10 pb-[60px]">
+        <div className={`relative z-[2] p-10 pb-[60px] ${isDemoMode ? 'flex flex-col justify-end h-full absolute inset-0' : ''}`}>
           {/* Game Header */}
           <div className="flex items-start gap-6 mb-8">
             <GameImage
               game={game}
-              size={140}
+              size={isDemoMode ? 220 : 140}
               borderRadius={16}
               style={{
                 border: `3px solid ${program?.color || '#a855f7'}60`,
@@ -246,10 +247,10 @@ const DetailedAnalysisPage = ({ game, skuId, buildId }) => {
               }}
             />
             <div className="flex-1">
-              <h1 className="m-0 text-5xl font-bold text-slate-50 mb-2 drop-shadow-lg">
+              <h1 className={`m-0 font-bold text-slate-50 mb-2 drop-shadow-lg ${isDemoMode ? 'text-7xl' : 'text-5xl'}`}>
                 {game.name}
               </h1>
-              <p className="m-0 mb-4 text-sm text-slate-400 max-w-[600px] leading-relaxed">
+              <p className={`m-0 mb-4 text-slate-400 max-w-[600px] leading-relaxed ${isDemoMode ? 'text-xl' : 'text-sm'}`}>
                 {game.description}
               </p>
               <div className="flex items-center gap-2.5 flex-wrap">

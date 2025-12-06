@@ -11,7 +11,8 @@ export default function Sidebar({
     handleBuildSelect,
     handleProgramSelect,
     handleNavigateToLanding,
-    isProgramActive
+    isProgramActive,
+    onStartDemo
 }) {
     return (
         <aside
@@ -124,6 +125,30 @@ export default function Sidebar({
                                 Compare
                             </div>
                             <div className="text-xs text-slate-500">Any vs Any</div>
+                        </div>
+                    )}
+                </button>
+
+                {/* Demo Mode Button */}
+                <button
+                    onClick={onStartDemo}
+                    title={sidebarCollapsed ? 'Start Demo Mode' : ''}
+                    className={`
+            w-full flex items-center gap-3 rounded-xl border-none cursor-pointer transition-all duration-200 mt-2
+            ${sidebarCollapsed ? 'justify-center p-3' : 'justify-start p-3'}
+            bg-transparent border-l-[3px] border-transparent hover:bg-white/5 group
+          `}
+                >
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-red-500/20 rounded-full animate-ping opacity-0 group-hover:opacity-100" />
+                        <Layers size={20} className="text-red-500 relative z-10" />
+                    </div>
+                    {!sidebarCollapsed && (
+                        <div className="text-left flex-1">
+                            <div className="text-base font-medium text-slate-400 group-hover:text-red-400 transition-colors">
+                                Demo Mode
+                            </div>
+                            <div className="text-xs text-slate-500">Auto-play Loop</div>
                         </div>
                     )}
                 </button>
