@@ -50,10 +50,18 @@ export default function GamingDashboard() {
     navigate('/');
   };
 
-  // Helper to check if a program is active based on URL
+  // Helper to check if a program is active based on the URL
   const isProgramActive = (programId) => {
     return location.pathname === `/program/${programId}`;
   };
+
+  // Handle Demo Mode Deep Link
+  useEffect(() => {
+    if (location.pathname === '/demo') {
+      setIsDemoMode(true);
+      navigate('/', { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-[#1a0f2e] to-[#0d0a18] text-white font-sans overflow-hidden">

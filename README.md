@@ -9,6 +9,7 @@ A high-performance, React-based dashboard for tracking and analyzing gaming perf
 -   **Detailed Analysis**: Deep dive into frame times, per-core frequency/temperature, and power analysis.
 -   **Sticky Header**: Persistent game context (Name, SKU, Build) while scrolling through detailed metrics.
 -   **Deep Linking**: Shareable URLs for specific programs, SKUs, games, and builds (e.g., `?build=2025.48`).
+-   **Demo Mode**: Access via the sidebar or directly at `/demo`. A hands-free, cinematic showcase mode optimized for large screens.
 -   **Build Selection**: Compare performance across different software builds directly from the sidebar.
 -   **Lazy Loading**: Optimized route loading for fast initial startup.
 -   **Interactive Charts**: Dynamic visualization using Recharts for frame times, trends, and hardware stats.
