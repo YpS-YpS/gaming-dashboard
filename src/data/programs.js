@@ -6,9 +6,9 @@ export const programs = [
     icon: '🏹',
     color: '#a855f7',
     skus: [
-      { id: 'arl-s', name: 'ARL S', fullName: 'Arrow Lake S Desktop', cores: '24C/32T', tdp: '125W' },
-      { id: 'arl-hx', name: 'ARL HX', fullName: 'Arrow Lake HX Mobile', cores: '24C/32T', tdp: '55W' },
-      { id: 'arl-h', name: 'ARL H', fullName: 'Arrow Lake H Mobile', cores: '16C/20T', tdp: '45W' }
+      { id: 'arl-s', name: 'ARL S', fullName: 'Arrow Lake S Desktop', cores: '24C/24T', tdp: '125W' },
+      { id: 'arl-hx', name: 'ARL HX', fullName: 'Arrow Lake HX Mobile', cores: '24C/24T', tdp: '55W' },
+      { id: 'arl-h', name: 'ARL H', fullName: 'Arrow Lake H Mobile', cores: '16C/16T', tdp: '45W' }
     ]
   },
   {
