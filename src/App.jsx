@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { ChevronRight, Gauge, ArrowLeftRight, Layers } from 'lucide-react';
-import { programs, builds, games } from './data';
+import { Gauge, ArrowLeftRight, Layers } from 'lucide-react';
+import { programs, games } from './data';
+import { useAvailableBuilds } from './hooks/useGameData';
+
 
 // Lazy load pages
 const LandingPage = React.lazy(() => import('./components/pages/LandingPage'));
@@ -25,15 +27,27 @@ import Sidebar from './components/layout/Sidebar';
 import DemoMode from './components/demo/DemoMode';
 
 export default function GamingDashboard() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Get current build from URL or default to first one
-  const currentBuild = searchParams.get('build') || builds[0];
+  // Resolve current SKU from URL so we can query the right builds
+  const skuIdFromUrl = (() => {
+    const match = location.pathname.match(/\/sku\/([^/]+)/);
+    return match ? match[1] : null;
+  })();
+
+  // Fetch real builds from API for current SKU (e.g. ['WW0826'] for NVL S)
+  const realBuilds = useAvailableBuilds(skuIdFromUrl);
+
+  // displayBuilds: use real builds from API (empty if no data for this SKU)
+  const displayBuilds = realBuilds;
+
+  // Get current build from URL or default to first available build
+  const currentBuild = searchParams.get('build') || displayBuilds[0];
+
 
   const handleBuildSelect = (build) => {
     setSearchParams(prev => {
@@ -75,11 +89,9 @@ export default function GamingDashboard() {
         <div className="absolute -bottom-[20%] right-[10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative flex z-10 h-screen">
-        {/* Sidebar */}
+      <div className="relative flex flex-col z-10 h-screen">
+        {/* Top Navbar */}
         <Sidebar
-          sidebarCollapsed={sidebarCollapsed}
-          setSidebarCollapsed={setSidebarCollapsed}
           navigate={navigate}
           location={location}
           currentBuild={currentBuild}
@@ -88,17 +100,18 @@ export default function GamingDashboard() {
           handleNavigateToLanding={handleNavigateToLanding}
           isProgramActive={isProgramActive}
           onStartDemo={() => setIsDemoMode(true)}
+          displayBuilds={displayBuilds}
         />
 
         {/* Main Content */}
-        <main className="flex-1 h-screen overflow-y-auto overflow-x-hidden scroll-smooth">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth">
           <React.Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<LandingPage onNavigate={(p) => navigate(`/program/${p.id}`)} isReady={!showSplash} />} />
               <Route path="/compare" element={<ComparisonPage />} />
-              <Route path="/program/:programId" element={<ProgramDashboard sidebarCollapsed={sidebarCollapsed} />} />
-              <Route path="/program/:programId/sku/:skuId" element={<ProgramDashboard sidebarCollapsed={sidebarCollapsed} />} />
-              <Route path="/program/:programId/sku/:skuId/game/:gameSlug" element={<ProgramDashboard sidebarCollapsed={sidebarCollapsed} />} />
+              <Route path="/program/:programId" element={<ProgramDashboard />} />
+              <Route path="/program/:programId/sku/:skuId" element={<ProgramDashboard />} />
+              <Route path="/program/:programId/sku/:skuId/game/:gameSlug" element={<ProgramDashboard />} />
             </Routes>
           </React.Suspense>
         </main>

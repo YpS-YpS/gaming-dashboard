@@ -212,18 +212,6 @@ export const games = [
     ]
   },
   {
-    id: 18, slug: 'hzd', name: 'Horizon Forbidden West', genre: 'Action', steamId: 2420110,
-    developer: 'Guerrilla Games', releaseDate: 'Mar 21, 2024',
-    engine: 'Decima Engine', graphicsAPI: 'DirectX 12', benchmarkDuration: '90s',
-    benchmarkScene: 'San Francisco Ruins - Machine Combat',
-    description: 'Join Aloy as she braves the Forbidden West to find answers and allies.',
-    funFacts: [
-      "The underwater exploration required a completely new water rendering system.",
-      "Aloy's hair is made of over 100,000 individual polygons for realistic movement.",
-      "The game features real-world landmarks like the Golden Gate Bridge and Transamerica Pyramid."
-    ]
-  },
-  {
     id: 19, slug: 'gowr', name: 'God of War Ragnarok', genre: 'Action', steamId: 2322010,
     developer: 'Santa Monica Studio', releaseDate: 'Sep 19, 2024',
     engine: 'Santa Monica Engine', graphicsAPI: 'DirectX 12', benchmarkDuration: '90s',
@@ -462,6 +450,67 @@ export const games = [
       "Melinoë is a real figure from Greek mythology, known as a bringer of nightmares.",
       "The game introduces a witchcraft system, allowing you to craft spells and potions.",
       "It is the first direct sequel Supergiant Games has ever made."
+    ]
+  },
+  {
+    id: 39, slug: 'ffxiv', name: 'Final Fantasy XIV: Dawntrail', genre: 'MMORPG', steamId: 39210,
+    developer: 'Square Enix', releaseDate: 'Jun 20, 2024',
+    engine: 'Crystal Engine', graphicsAPI: 'DirectX 11 / DirectX 12', benchmarkDuration: '120s',
+    benchmarkScene: 'Benchmark Mode - Tuliyollal City',
+    description: 'The Dawntrail expansion ushers in a new era for FFXIV with graphical upgrades and a new continent to explore.',
+    funFacts: [
+      "FFXIV was relaunched as A Realm Reborn after a complete rewrite following a disastrous initial launch.",
+      "The game has a dedicated benchmark tool that samples real in-engine scenes.",
+      "Producer Naoki Yoshida personally apologized to players and promised to rebuild the game from scratch."
+    ]
+  },
+  {
+    id: 40, slug: 'ac-mirage', name: "Assassin's Creed Mirage", genre: 'Action', steamId: null,
+    imageUrl: 'https://staticctf.ubisoft.com/J3yJr34U2pZ2Ieem48Dwy9uqj5PNUQTn/7E7bXW9lRBZakEEhMdrPOR/f31d4fae7dec11d0a76500a0c91e6bf6/AC_Mirage_Key_Art_Wide.jpg',
+    developer: 'Ubisoft Bordeaux', releaseDate: 'Oct 5, 2023',
+    engine: 'Anvil Next 2.0', graphicsAPI: 'DirectX 12', benchmarkDuration: '60s',
+    benchmarkScene: 'Baghdad - Grand Souk Rooftop Chase',
+    description: 'Return to the roots of Assassin\'s Creed. Become a Master Assassin in 9th-century Baghdad.',
+    funFacts: [
+      "Mirage was originally conceived as an expansion for Valhalla before being expanded into a full game.",
+      "The game features a historically accurate recreation of Abbasid-era Baghdad.",
+      "Basim was the most requested protagonist after his mysterious appearance in Valhalla."
+    ]
+  },
+  {
+    id: 41, slug: 'far-cry-6', name: 'Far Cry 6', genre: 'FPS', steamId: 1339800,
+    developer: 'Ubisoft Toronto', releaseDate: 'Oct 7, 2021',
+    engine: 'Dunia Engine 2', graphicsAPI: 'DirectX 12', benchmarkDuration: '60s',
+    benchmarkScene: 'Esperanza - Downtown Combat',
+    description: 'Become a guerrilla fighter in a Caribbean island paradise turned dictatorship.',
+    funFacts: [
+      "Giancarlo Esposito (Breaking Bad's Gus Fring) plays the main villain, Antón Castillo.",
+      "The game features a built-in benchmark that stress-tests CPU and GPU in urban environments.",
+      "The island of Yara is heavily inspired by Cuba's geography and political history."
+    ]
+  },
+  {
+    id: 42, slug: 'tiny-tina', name: "Tiny Tina's Wonderlands", genre: 'FPS', steamId: 1286680,
+    developer: 'Gearbox Software', releaseDate: 'Mar 25, 2022',
+    engine: 'Unreal Engine 4', graphicsAPI: 'DirectX 12', benchmarkDuration: '60s',
+    benchmarkScene: 'Brighthoof - Overworld Combat',
+    description: 'Blow up dragons with gun magic in this tabletop RPG-inspired looter-shooter.',
+    funFacts: [
+      "The game is a spin-off of Borderlands 2's celebrated DLC 'Tiny Tina's Assault on Dragon Keep'.",
+      "The art style blends cel-shading with a hand-crafted storybook aesthetic.",
+      "Tiny Tina is played by Ashly Burch, who also voices the character in all Borderlands games."
+    ]
+  },
+  {
+    id: 43, slug: 'hzd', name: 'Horizon Zero Dawn Remastered', genre: 'Action', steamId: 2552220,
+    developer: 'Guerrilla Games / Nixxes Software', releaseDate: 'Oct 31, 2024',
+    engine: 'Decima Engine', graphicsAPI: 'DirectX 12', benchmarkDuration: '60s',
+    benchmarkScene: 'All-Mother Mountain - Open World Combat',
+    description: 'A remastered edition of the award-winning open-world RPG, rebuilt with enhanced visuals and performance improvements for PC.',
+    funFacts: [
+      "The remaster includes over 10 hours of re-recorded facial animation using new capture technology.",
+      "Guerrilla collaborated with Nixxes Software, known for their high-quality PC ports of PlayStation titles.",
+      "The Decima engine was originally developed for Killzone Shadow Fall before powering Death Stranding."
     ]
   }
 ];

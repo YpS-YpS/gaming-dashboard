@@ -1,13 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { programs, builds, games } from '../../data';
+import { programs, games } from '../../data';
+import { useAvailableBuilds, useGameData } from '../../hooks/useGameData';
 import SplashPage from '../pages/SplashPage';
 import DemoGameCardView from './DemoGameCardView';
 
+// Demo mode only cycles through configs that have real data
+const DEMO_SKU_ID = 'nvl-sk-28c';
+
 const DemoMode = ({ isActive, onClose }) => {
-    const [splashOpen, setSplashOpen] = useState(true); // Controls Splash Curtain (true = covering, false = revealed)
-    const [gameExiting, setGameExiting] = useState(false); // Controls Game Fade Out
+    const [splashOpen, setSplashOpen] = useState(true);
+    const [gameExiting, setGameExiting] = useState(false);
     const [config, setConfig] = useState(null);
-    const [key, setKey] = useState(0); // Force re-render of Splash
+    const [key, setKey] = useState(0);
+
+    // Fetch real builds and data for the demo SKU
+    const realBuilds = useAvailableBuilds(isActive ? DEMO_SKU_ID : null);
+    const demoBuild = realBuilds[0] || '';
+    const { availableSlugs } = useGameData(DEMO_SKU_ID, demoBuild);
+
+    // Filter games to only those with real data
+    const demoGames = games.filter(g => availableSlugs.has(g.slug));
+
+    // Find the NVL S program and SKU
+    const demoProgram = programs.find(p => p.skus.some(s => s.id === DEMO_SKU_ID));
+    const demoSku = demoProgram?.skus.find(s => s.id === DEMO_SKU_ID);
 
     // Handle Fullscreen
     useEffect(() => {
@@ -35,27 +51,26 @@ const DemoMode = ({ isActive, onClose }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isActive, onClose]);
 
-    // Random Config Generator
+    // Random Config Generator — constrained to real data
     const pickRandomConfig = useCallback(() => {
-        const randomProgram = programs[Math.floor(Math.random() * programs.length)];
-        const randomSku = randomProgram.skus[Math.floor(Math.random() * randomProgram.skus.length)];
-        const randomGame = games[Math.floor(Math.random() * games.length)];
-        const randomBuild = builds[0]; // Use latest build for best visuals
+        if (!demoSku || !demoBuild || demoGames.length === 0) return null;
+
+        const randomGame = demoGames[Math.floor(Math.random() * demoGames.length)];
 
         return {
             game: randomGame,
-            sku: randomSku, // Pass full SKU object
-            buildId: randomBuild,
-            programId: randomProgram.id
+            sku: demoSku,
+            buildId: demoBuild,
+            programId: demoProgram.id
         };
-    }, []);
+    }, [demoSku, demoBuild, demoGames, demoProgram]);
 
     // Initial Config
     useEffect(() => {
-        if (isActive && !config) {
+        if (isActive && !config && demoGames.length > 0) {
             setConfig(pickRandomConfig());
         }
-    }, [isActive, config, pickRandomConfig]);
+    }, [isActive, config, pickRandomConfig, demoGames.length]);
 
     // Main Loop Logic
     useEffect(() => {
@@ -64,18 +79,12 @@ const DemoMode = ({ isActive, onClose }) => {
         let timeout;
 
         if (!splashOpen) {
-            // Game is revealed. Wait for X seconds, then trigger exit.
-
-            // 1. Wait for 14s (Game Display Time)
             timeout = setTimeout(() => {
-                setGameExiting(true); // Trigger Game Fade Out
-
-                // 2. Wait 1s for Fade Out, then Drop Curtain
+                setGameExiting(true);
                 setTimeout(() => {
-                    setSplashOpen(true); // Slide Splash Down
-                    setKey(k => k + 1); // Reset Splash Animation
+                    setSplashOpen(true);
+                    setKey(k => k + 1);
                 }, 1000);
-
             }, 14000);
         }
 
@@ -83,12 +92,8 @@ const DemoMode = ({ isActive, onClose }) => {
     }, [isActive, splashOpen]);
 
     const handleSplashComplete = useCallback(() => {
-        // Splash animation finished.
-        // 1. Pick NEW config for the NEXT game (while curtain is down)
         setConfig(pickRandomConfig());
-        setGameExiting(false); // Reset exit state for new game
-
-        // 2. Lift Curtain (Slide Up)
+        setGameExiting(false);
         setSplashOpen(false);
     }, [pickRandomConfig]);
 
@@ -96,12 +101,11 @@ const DemoMode = ({ isActive, onClose }) => {
 
     return (
         <div className="fixed inset-0 z-[10000] bg-black overflow-hidden">
-
             {/* Layer 1: Game View (Underneath) */}
             {config && (
                 <div className="absolute inset-0 z-0">
                     <DemoGameCardView
-                        key={`${config.game.id}-${key}`} // Force remount every cycle
+                        key={`${config.game.id}-${key}`}
                         game={config.game}
                         sku={config.sku}
                         buildId={config.buildId}

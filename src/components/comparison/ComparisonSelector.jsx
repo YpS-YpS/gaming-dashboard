@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, Gamepad2, Cpu, GitBranch } from 'lucide-react';
-import { programs, builds, games, getGameImageUrl } from '../../data';
+import { programs, games, getGameImageUrl } from '../../data';
+import { useAvailableBuilds } from '../../hooks/useGameData';
 
 const Dropdown = ({ label, icon: Icon, value, options, onChange, renderOption, color = '#a855f7' }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -66,6 +67,7 @@ const Dropdown = ({ label, icon: Icon, value, options, onChange, renderOption, c
 
 const ComparisonSelector = ({ side, selection, onChange, color }) => {
   const { program, sku, build, game } = selection;
+  const availableBuilds = useAvailableBuilds(sku.id);
 
   const handleProgramChange = (newProgram) => {
     onChange({
@@ -130,8 +132,8 @@ const ComparisonSelector = ({ side, selection, onChange, color }) => {
         <Dropdown
           label="Build"
           icon={GitBranch}
-          value={build}
-          options={builds}
+          value={build || availableBuilds[0] || ''}
+          options={availableBuilds.length > 0 ? availableBuilds : ['No builds available']}
           onChange={handleBuildChange}
           color={color}
         />

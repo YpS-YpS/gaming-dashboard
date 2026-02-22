@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
 import { ResponsiveContainer, AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 import { ChevronDown, Activity, Clock, Thermometer, Monitor, Cpu, Zap, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { getFpsColor, generateFrameTimeData, generateFrequencyData, generateTempData, getBuildTrend } from '../../utils';
+import { getFpsColor } from '../../utils';
+import { useTimeseries } from '../../hooks/useGameData';
 import TrendSparkline from '../charts/TrendSparkline';
 import { CustomTooltip, TrendTooltip } from '../charts/tooltips';
 import DeltaBadge from '../common/DeltaBadge';
@@ -9,13 +10,26 @@ import GameImage from '../common/GameImage';
 import MetricCard from './MetricCard';
 
 const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, onOpenDetail, iconSize = 48, animationDelay = 0 }) => {
-  const frameTimeData = useMemo(() => generateFrameTimeData(), []);
-  const frequencyData = useMemo(() => generateFrequencyData(), []);
-  const tempData = useMemo(() => generateTempData(), []);
-  const { trendData, delta, deltaPercent } = useMemo(
-    () => getBuildTrend(game.id, skuId, currentBuild),
-    [game.id, skuId, currentBuild]
+  // Single-point trend: just the current build's FPS
+  const trendData = useMemo(() => {
+    if (!metrics || !currentBuild) return [];
+    return [{ build: currentBuild, avgFps: metrics.avgFps }];
+  }, [metrics, currentBuild]);
+  const delta = 0;
+  const deltaPercent = 0;
+
+  // Lazily fetch timeseries when expanded
+  const { data: tsData, loading: tsLoading } = useTimeseries(
+    isExpanded ? game.slug : null,
+    skuId,
+    currentBuild,
+    ['frametimes', 'frequency', 'temperature']
   );
+
+  // Extract chart data from timeseries API response
+  const frameTimeData = tsData?.frametimes || [];
+  const frequencyData = tsData?.frequency || [];
+  const tempData = tsData?.temperature || [];
 
   const [loading, setLoading] = React.useState(!!animationDelay);
 
@@ -53,12 +67,14 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
           <div className="flex items-center gap-3">
             <div className="text-right">
               <div className="text-[11px] text-slate-500 uppercase tracking-wider mb-0.5">
-                Last 4 Builds
+                Build History
               </div>
               {loading ? (
                 <div className="w-20 h-8 bg-white/5 animate-pulse rounded" />
-              ) : (
+              ) : trendData.length > 0 ? (
                 <TrendSparkline data={trendData} delta={delta} />
+              ) : (
+                <div className="w-20 h-8 flex items-center justify-center text-xs text-slate-600">—</div>
               )}
             </div>
             <DeltaBadge delta={delta} deltaPercent={deltaPercent} />
@@ -70,20 +86,23 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
           <div className="flex items-center gap-8">
             <div className="text-center min-w-[50px]">
               <div className="text-3xl font-bold" style={{ color: getFpsColor(metrics.avgFps) }}>
-                {metrics.avgFps}
+                {Math.round(metrics.avgFps)}
               </div>
+
               <div className="text-[11px] text-slate-500 uppercase">Avg</div>
             </div>
             <div className="text-center min-w-[50px]">
               <div className="text-2xl font-semibold" style={{ color: getFpsColor(metrics.onePercentLow) }}>
-                {metrics.onePercentLow}
+                {Math.round(metrics.onePercentLow)}
               </div>
+
               <div className="text-[11px] text-slate-500 uppercase">1% Low</div>
             </div>
             <div className="text-center min-w-[50px]">
               <div className="text-2xl font-semibold" style={{ color: getFpsColor(metrics.pointOnePercentLow) }}>
-                {metrics.pointOnePercentLow}
+                {Math.round(metrics.pointOnePercentLow)}
               </div>
+
               <div className="text-[11px] text-slate-500 uppercase">0.1% Low</div>
             </div>
           </div>
@@ -115,22 +134,20 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
               <div className="flex items-center gap-2">
                 <Activity size={14} className="text-primary" />
                 <span className="text-[15px] font-medium text-slate-200">
-                  Build-over-Build Trend
+                  Build History
                 </span>
               </div>
               <DeltaBadge delta={delta} deltaPercent={deltaPercent} />
             </div>
             <div className="flex items-center gap-6">
               <div className="flex-1 h-[60px]">
-                {loading ? (
-                  <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
-                ) : (
+                {trendData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={trendData} key={game.id}>
+                    <AreaChart data={trendData} key={`${game.id}-${skuId}-${currentBuild}`}>
                       <defs>
                         <linearGradient id={`trendGrad-${game.id}`} x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor={delta >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0.3} />
-                          <stop offset="95%" stopColor={delta >= 0 ? '#10b981' : '#ef4444'} stopOpacity={0} />
+                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                         </linearGradient>
                       </defs>
                       <XAxis dataKey="build" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} />
@@ -139,23 +156,27 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                       <Area
                         type="monotone"
                         dataKey="avgFps"
-                        stroke={delta >= 0 ? '#10b981' : '#ef4444'}
+                        stroke="#10b981"
                         strokeWidth={2}
                         fill={`url(#trendGrad-${game.id})`}
-                        dot={{ r: 4, fill: delta >= 0 ? '#10b981' : '#ef4444', strokeWidth: 0 }}
+                        dot={{ r: 4, fill: '#10b981', strokeWidth: 0 }}
                         isAnimationActive={true}
                         animationDuration={2000}
                         animationEasing="ease-in-out"
                       />
                     </AreaChart>
                   </ResponsiveContainer>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-sm text-slate-600">
+                    No build history available
+                  </div>
                 )}
               </div>
               <div className="flex gap-4">
-                {trendData.map((d, i) => (
+                {trendData.map((d) => (
                   <div key={d.build} className="text-center">
-                    <div className={`text-lg font-semibold ${i === trendData.length - 1 ? (delta >= 0 ? 'text-emerald-500' : 'text-red-500') : 'text-slate-400'}`}>
-                      {d.avgFps}
+                    <div className="text-lg font-semibold text-emerald-500">
+                      {Math.round(d.avgFps)}
                     </div>
                     <div className="text-[11px] text-slate-500">{d.build}</div>
                   </div>
@@ -183,7 +204,7 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <span className="text-[15px] font-medium text-slate-200">Frame Time</span>
               </div>
               <ResponsiveContainer width="100%" height={100}>
-                {loading ? (
+                {tsLoading || frameTimeData.length === 0 ? (
                   <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
                 ) : (
                   <AreaChart data={frameTimeData} key={`ft-${game.id}`}>
@@ -219,7 +240,7 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <span className="text-[15px] font-medium text-slate-200">CPU Frequency</span>
               </div>
               <ResponsiveContainer width="100%" height={100}>
-                {loading ? (
+                {tsLoading || frequencyData.length === 0 ? (
                   <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
                 ) : (
                   <LineChart data={frequencyData} key={`freq-${game.id}`}>
@@ -241,7 +262,7 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <span className="text-[15px] font-medium text-slate-200">Temperature</span>
               </div>
               <ResponsiveContainer width="100%" height={100}>
-                {loading ? (
+                {tsLoading || tempData.length === 0 ? (
                   <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
                 ) : (
                   <AreaChart data={tempData} key={`temp-${game.id}`}>
@@ -282,15 +303,11 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-500">Average</span>
-                  <span className="text-[15px] font-medium text-secondary">{metrics.avgPCoreMhz} MHz</span>
+                  <span className="text-[15px] font-medium text-secondary">{metrics.avgPCoreMhz ?? '—'} MHz</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-500">Maximum</span>
-                  <span className="text-[15px] font-medium text-emerald-500">{metrics.maxPCoreMhz} MHz</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-500">Minimum</span>
-                  <span className="text-[15px] font-medium text-red-500">{metrics.minPCoreMhz} MHz</span>
+                  <span className="text-[15px] font-medium text-emerald-500">{metrics.maxPCoreMhz ?? '—'} MHz</span>
                 </div>
               </div>
             </div>
@@ -304,15 +321,7 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-500">Average</span>
-                  <span className="text-[15px] font-medium text-primary">{metrics.avgECoreMhz} MHz</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-500">Maximum</span>
-                  <span className="text-[15px] font-medium text-emerald-500">{metrics.maxECoreMhz} MHz</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-500">Minimum</span>
-                  <span className="text-[15px] font-medium text-red-500">{metrics.minECoreMhz} MHz</span>
+                  <span className="text-[15px] font-medium text-primary">{metrics.avgECoreMhz ?? '—'} MHz</span>
                 </div>
               </div>
             </div>
@@ -326,16 +335,18 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
               <div className="flex flex-col gap-2">
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-500">Avg Package</span>
-                  <span className="text-[15px] font-medium text-amber-500">{metrics.avgPackageTemp}°C</span>
+                  <span className="text-[15px] font-medium text-amber-500">{metrics.avgPackageTemp ?? '—'}°C</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-500">Max Package</span>
-                  <span className="text-[15px] font-medium text-rose-500">{metrics.maxPackageTemp}°C</span>
+                  <span className="text-[15px] font-medium text-rose-500">{metrics.maxPackageTemp ?? '—'}°C</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-slate-500">Headroom</span>
-                  <span className="text-[15px] font-medium text-emerald-500">{100 - metrics.maxPackageTemp}°C</span>
-                </div>
+                {metrics.maxPackageTemp != null && (
+                  <div className="flex justify-between">
+                    <span className="text-sm text-slate-500">Headroom</span>
+                    <span className="text-[15px] font-medium text-emerald-500">{100 - metrics.maxPackageTemp}°C</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -345,7 +356,7 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <AlertTriangle size={14} className="text-amber-500" />
                 <span className="text-[15px] font-medium text-slate-200">Throttling</span>
               </div>
-              {metrics.throttling.length > 0 ? (
+              {metrics.throttling && metrics.throttling.length > 0 ? (
                 <div className="flex flex-col gap-2">
                   {metrics.throttling.map((reason, i) => (
                     <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">

@@ -1,22 +1,16 @@
-import React, { useState, useMemo, Component } from 'react';
+import React, { useState, Component } from 'react';
+
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Gauge, Settings, Monitor, HardDrive, MemoryStick, Layers, ChevronDown, ChevronUp, Timer, Code2, Gamepad2, Info, Cpu } from 'lucide-react';
+import { Gauge, Settings, Monitor, Layers, ChevronDown, ChevronUp, Timer, Code2, Gamepad2, Info, Cpu } from 'lucide-react';
 import { programs, getGameImageUrl } from '../../data';
-import {
-  getFpsColor,
-  generateDetailedFrameTimeData,
-  generatePerCoreFrequencyData,
-  generateCpuResidencyData,
-  generatePerformanceCapabilityData,
-  generateClipReasonData,
-  generatePerCoreTemperatureData,
-  generatePowerData,
-  generateSystemConfig,
-  generateGameMetricsForBuild,
-  getBuildTrend
-} from '../../utils';
+import { getFpsColor } from '../../utils';
+import { useGameData, useTimeseries } from '../../hooks/useGameData';
+import { useSystemConfig } from '../../hooks/useSystemConfig';
+import { useSystemScope } from '../../hooks/useSystemScope';
 import DeltaBadge from '../common/DeltaBadge';
+import SystemScopePanel from '../system/SystemScopePanel';
 import GameImage from '../common/GameImage';
+
 
 // Chart Components
 import FrameTimeChart from '../charts/analysis/FrameTimeChart';
@@ -135,21 +129,39 @@ const DetailedAnalysisPage = ({ game, skuId, buildId, isDemoMode = false }) => {
   const [heroLoaded, setHeroLoaded] = useState(false);
   const [heroError, setHeroError] = useState(false);
 
-  // Calculate seed safely (needed for hooks below)
-  const safeGameId = game?.id || 1;
-  const safeSkuId = skuId || 'ARL-U9';
-  const safeBuildId = buildId || 'WW01.2';
-  const seed = safeGameId * 1000 + safeSkuId.charCodeAt(0);
+  // ── Real data from API ───────────────────────────────────────────────────
+  const { getMetrics } = useGameData(skuId, buildId);
+  const { data: realTimeseries, loading: tsLoading } = useTimeseries(
+    game?.slug, skuId, buildId
+  );
+  const { config: systemConfig } = useSystemConfig(buildId, skuId);
+  const { data: systemScopeData } = useSystemScope(buildId, skuId);
 
-  // All useMemo hooks MUST be called before any early returns (React rules of hooks)
-  const detailedFrameTimeData = useMemo(() => generateDetailedFrameTimeData(seed), [seed]);
-  const perCoreResult = useMemo(() => generatePerCoreFrequencyData(safeSkuId, seed), [safeSkuId, seed]);
-  const trendResult = useMemo(() => getBuildTrend(safeGameId, safeSkuId, safeBuildId), [safeGameId, safeSkuId, safeBuildId]);
-  const cpuResidencyData = useMemo(() => generateCpuResidencyData(seed), [seed]);
-  const performanceCapabilityData = useMemo(() => generatePerformanceCapabilityData(seed), [seed]);
-  const clipReasonResult = useMemo(() => generateClipReasonData(seed), [seed]);
-  const perCoreTempResult = useMemo(() => generatePerCoreTemperatureData(safeSkuId, seed), [safeSkuId, seed]);
-  const powerData = useMemo(() => generatePowerData(seed), [seed]);
+  // ── Chart data from API (empty arrays when no data) ────────────────────
+  const detailedFrameTimeData = realTimeseries?.frametimes || [];
+  const cpuResidencyData = realTimeseries?.cstateResidency || [];
+  const clipReasonDataRaw = realTimeseries?.clipReason || [];
+  const powerDataRaw = realTimeseries?.power || [];
+
+  // Frequency
+  const freqData = realTimeseries?.frequency || [];
+  const perCoreData = freqData;
+  const pCoreCount = freqData.length > 0
+    ? Object.keys(freqData[0]).filter(k => k.startsWith('pCore')).length
+    : 0;
+  const eCoreCount = freqData.length > 0
+    ? Object.keys(freqData[0]).filter(k => k.startsWith('eCore')).length
+    : 0;
+
+  // Temperature
+  const tempDataRaw = realTimeseries?.temperature || [];
+  const perCoreTemperatureData = tempDataRaw;
+  const tempCoreCount = tempDataRaw.length > 0
+    ? Object.keys(tempDataRaw[0]).filter(k => k.startsWith('core')).length
+    : 0;
+
+  const performanceCapabilityData = []; // PTAT HWP Capability — future sprint
+
 
   // Handle Escape key to close
   React.useEffect(() => {
@@ -165,32 +177,36 @@ const DetailedAnalysisPage = ({ game, skuId, buildId, isDemoMode = false }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [navigate]);
 
-  // Destructure memoized results with safe defaults
-  const { data: perCoreData = [], pCores: pCoreCount = 4, eCores: eCoreCount = 4 } = perCoreResult || {};
-  const { trendData = [], delta = 0, deltaPercent = 0 } = trendResult || {};
-  const { data: clipReasonData = [] } = clipReasonResult || {};
-  const { data: perCoreTemperatureData = [], coreCount: tempCoreCount = 8 } = perCoreTempResult || {};
-
   // Convert core counts to arrays for mapping
   const pCores = Array.from({ length: pCoreCount }, (_, i) => i);
   const eCores = Array.from({ length: eCoreCount }, (_, i) => i);
 
-  // Defensive check - return early if required props missing
-  if (!game || !skuId || !buildId) {
+  const program = programs.find(p => p.skus.some(s => s.id === skuId));
+  const sku = program?.skus.find(s => s.id === skuId);
+
+  // KPI metrics from API only
+  const metrics = getMetrics(game?.slug);
+
+  // Build trend: single data point
+  const trendData = metrics && buildId ? [{ build: buildId, avgFps: metrics.avgFps }] : [];
+  const delta = 0;
+  const deltaPercent = 0;
+
+  // Defensive check - return early if required props missing or no data yet
+  if (!game || !skuId || !buildId || !metrics) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white flex items-center justify-center font-space">
         <div className="text-center">
           <div className="text-5xl mb-4">🎮</div>
-          <div className="text-lg text-slate-500">Loading game data...</div>
+          <div className="text-lg text-slate-500">{!metrics && game ? 'Loading performance data...' : 'Loading game data...'}</div>
+          {!metrics && game && (
+            <div className="mt-4 w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto" />
+          )}
         </div>
       </div>
     );
   }
 
-  const program = programs.find(p => p.skus.some(s => s.id === skuId));
-  const sku = program?.skus.find(s => s.id === skuId);
-  const metrics = generateGameMetricsForBuild(game.id, skuId, buildId);
-  const systemConfig = generateSystemConfig(skuId, buildId);
 
   // Get hero image - fallback to header if hero fails
   const heroUrl = getGameImageUrl(game, 'hero');
@@ -388,69 +404,42 @@ const DetailedAnalysisPage = ({ game, skuId, buildId, isDemoMode = false }) => {
         </div>
 
         {/* Frame Time Analysis */}
-        <FrameTimeChart data={detailedFrameTimeData} />
+        {detailedFrameTimeData.length > 0 && <FrameTimeChart data={detailedFrameTimeData} />}
 
         {/* Per-Core Frequency */}
-        <FrequencyChart data={perCoreData} pCores={pCores} eCores={eCores} />
+        {perCoreData.length > 0 && <FrequencyChart data={perCoreData} pCores={pCores} eCores={eCores} />}
 
         {/* CPU Residency vs. Relative Time - Full width */}
-        <CpuResidencyChart data={cpuResidencyData} />
+        {cpuResidencyData.length > 0 && <CpuResidencyChart data={cpuResidencyData} />}
 
         {/* Performance Capability & C-State - Full width */}
-        <PerformanceCapabilityChart data={performanceCapabilityData} />
+        {performanceCapabilityData.length > 0 && <PerformanceCapabilityChart data={performanceCapabilityData} />}
 
         {/* IA Clip Reason */}
-        <ClipReasonChart data={clipReasonData} />
+        {clipReasonDataRaw.length > 0 && <ClipReasonChart data={clipReasonDataRaw} />}
 
         {/* Per-Core Temperature */}
-        <TemperatureChart data={perCoreTemperatureData} tempCoreCount={tempCoreCount} />
+        {perCoreTemperatureData.length > 0 && <TemperatureChart data={perCoreTemperatureData} tempCoreCount={tempCoreCount} />}
 
         {/* Power */}
-        <PowerChart data={powerData} />
+        {powerDataRaw.length > 0 && <PowerChart data={powerDataRaw} />}
 
         {/* Build Trend */}
-        <TrendChart data={trendData} delta={delta} deltaPercent={deltaPercent} />
+        {trendData.length > 0 && <TrendChart data={trendData} delta={delta} deltaPercent={deltaPercent} />}
 
-        {/* System Configuration */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Settings size={20} className="text-primary" />
-            <span className="text-xl font-semibold text-slate-50">System Configuration</span>
+        {/* Loading indicator for timeseries */}
+        {tsLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
+              <span className="text-sm text-slate-500">Loading chart data...</span>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            <ConfigSection title="CPU" icon={Cpu}>
-              <ConfigRow label="Processor" value={systemConfig.cpu.name} highlight="#a855f7" />
-              <ConfigRow label="Cores" value={systemConfig.cpu.cores} />
-              <ConfigRow label="Boost" value={systemConfig.cpu.boostClock} highlight="#10b981" />
-              <ConfigRow label="TDP" value={systemConfig.cpu.tdp} />
-            </ConfigSection>
-            <ConfigSection title="Memory" icon={MemoryStick}>
-              <ConfigRow label="Type" value={systemConfig.memory.type} highlight="#ec4899" />
-              <ConfigRow label="Capacity" value={systemConfig.memory.capacity} />
-              <ConfigRow label="Timings" value={systemConfig.memory.timings} />
-            </ConfigSection>
-            <ConfigSection title="GPU" icon={Monitor}>
-              <ConfigRow label="Model" value={systemConfig.gpu.name} highlight="#10b981" />
-              <ConfigRow label="Driver" value={systemConfig.gpu.driver} highlight="#f59e0b" />
-              <ConfigRow label="VRAM" value={systemConfig.gpu.vram} />
-            </ConfigSection>
-            <ConfigSection title="BIOS" icon={Layers}>
-              <ConfigRow label="Version" value={systemConfig.bios.version} highlight="#06b6d4" />
-              <ConfigRow label="Date" value={systemConfig.bios.date} />
-              <ConfigRow label="Mode" value={systemConfig.bios.mode} />
-            </ConfigSection>
-            <ConfigSection title="OS" icon={HardDrive}>
-              <ConfigRow label="Name" value={systemConfig.os.name} highlight="#06b6d4" />
-              <ConfigRow label="Build" value={systemConfig.os.build} />
-              <ConfigRow label="DirectX" value={systemConfig.os.directX} />
-            </ConfigSection>
-            <ConfigSection title="Test Settings" icon={Settings}>
-              <ConfigRow label="Resolution" value={systemConfig.testSettings.resolution} highlight="#a855f7" />
-              <ConfigRow label="Preset" value={systemConfig.testSettings.preset} />
-              <ConfigRow label="DLSS" value={systemConfig.testSettings.dlss} />
-            </ConfigSection>
-          </div>
-        </div>
+        )}
+
+
+        {/* System Scope / Configuration */}
+        <SystemScopePanel scopeData={systemScopeData} fallbackConfig={systemConfig} />
       </div>
     </div>
   );

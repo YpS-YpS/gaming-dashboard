@@ -1,0 +1,256 @@
+# Real Data Pipeline — Intel Gaming Dashboard
+
+## What This Solves
+
+The dashboard currently uses seeded random generators for all metrics. This plan replaces those generators with **real PTAT Monitor CSV data** processed by a Python ETL script, producing JSON files the React app reads at runtime.
+
+This is **not** a backend rewrite — the dashboard stays a static React SPA. The pipeline runs **once per build drop** and outputs static JSON.
+
+---
+
+## What We Know From The CSV
+
+The existing [FF_Dawntrail_L2C1_PTATMonitor_17-10-2025_16H-14-12S719.csv](file:///c:/code/gaming-dashboard/FF_Dawntrail_L2C1_PTATMonitor_17-10-2025_16H-14-12S719.csv) tells us the exact schema:
+
+| Signal | CSV Column | Notes |
+|---|---|---|
+| **SKU identity** | `CPU Name` (col 10) | e.g. `"ARL HX (SBGA)"` — encodes program + SKU |
+| **Build/FW** | `Firmware Version` (col 9) | e.g. `0x2210072` → maps to build ID |
+| **Timestamp** | `Date` + `Relative Time(mS)` | Per-sample timeline (0–60,000ms typical) |
+| **IA Power** | `Power-IA Power(Watts)` (col 368) | Core power draw |
+| **GT Power** | `Power-GT Power(Watts)` (col 369) | iGPU power draw |
+| **IA Clip Reason** | `Turbo Parameters-IA Clip Reason` (col 378) | MAX_TURBO / PBM_PL1 / THERMAL etc. |
+| **GT Clip Reason** | `Turbo Parameters-Gt Clip Reason` (col 379) | Discrete vs integrated context |
+| **Per-core freq** | `CPU0..23-Frequency(MHz)` | 24 per-core columns |
+| **Per-core temp** | `CPU0..23-Temperature(Degree C)` | 24 per-core columns |
+| **Per-core type** | `CPU0-Core Type` | `"P Core"` or `"E Core"` |
+| **Per-core throttle** | `CPU0-Throttling Reason` | `"No"` / `"Thermal"` / `"Power Limit"` |
+| **Pkg C-State** | `Pkg CState Residency-C0/C2/C6/C8/C10(percent)` | Package C-state breakdown |
+| **Per-core C-State** | `CPU0..23 CState Residency-C0/C1/C6/C7` | 24 cores × 4 states |
+| **iGPU freq** | `Gfx Component-Current Slice-Gfx Frequency(MHz)` | "Invalid" when discrete GPU used |
+| **iGPU temp** | `Gfx Component-DTS(Degree C)` | GT die temp |
+
+> [!IMPORTANT]
+> **FPS / Frame Time data is NOT in the PTAT CSV.** PTAT is a CPU/power telemetry tool. FPS must come from a separate source — PresentMon, FrameView, or Intel PresentMon SDK CSVs. The pipeline design accounts for two input types.
+
+---
+
+## User Review Required
+
+> [!WARNING]
+> **Confirm before proceeding:**
+> 1. What tool generates your FPS/frame time data? (PresentMon JSON, FrameView CSV, OCAT, something custom?)
+> 2. What is your file naming convention — does the filename encode Game + SKU + Build, or is that inside the file headers?
+> 3. iGPU vs dGPU: is this a separate column, a separate file, or encoded in the `CPU Name` / filename?
+> 4. Arrow Lake has 9 SKUs and Nova Lake has 15 — do you want the dashboard's [programs.js](file:///c:/code/gaming-dashboard/src/data/programs.js) updated to list all of them, or keep it grouped/filtered?
+
+---
+
+## Architecture: Static-First Pipeline
+
+```
+📂 data/raw/
+   └── 2025.48/                   ← build folder
+       └── arl-hx/                ← SKU folder
+           ├── ff-dawntrail/      ← game folder
+           │   ├── ptat.csv       ← PTAT Monitor (701 cols, ~3870 rows)
+           │   └── fps.csv        ← PresentMon / FrameView
+           └── cyberpunk/
+               ├── ptat.csv
+               └── fps.csv
+
+        ↓  python pipeline/process.py
+
+📄 src/data/results.json          ← React reads this
+📄 src/data/timeseries.json       ← Raw chart data (frame-by-frame)
+```
+
+### Why This Shape?
+- **One JSON read at startup** — React fetches `results.json` once; no per-click API calls
+- **`timeseries.json` is lazy-loaded** — only fetched when the user opens a Detailed Analysis view
+- **The pipeline is idempotent** — running it twice on the same input produces the same output
+- **Git-diffable** — JSON files check into the repo; you can diff build-over-build automatically
+
+---
+
+## Proposed Changes
+
+### Python Pipeline (new files)
+
+---
+
+#### [NEW] pipeline/process.py
+
+The main ETL entry point. Usage:
+```bash
+python pipeline/process.py --build 2025.48 --input data/raw/2025.48/
+```
+
+**What it does:**
+1. Walks the `data/raw/{build}/` directory tree
+2. For each `{sku}/{game}/ptat.csv` → extracts aggregated metrics
+3. For each `{sku}/{game}/fps.csv` → extracts FPS percentiles + frame time arrays
+4. Merges into a single record keyed by `{buildId}_{skuId}_{gameSlug}`
+5. Appends/updates `src/data/results.json`
+6. Writes per-game timeseries to `src/data/timeseries/{buildId}_{skuId}_{gameSlug}.json`
+
+---
+
+#### [NEW] pipeline/ptat_parser.py
+
+Parses a single PTAT CSV → aggregated metrics object.
+
+**Extracts:**
+- `avgIaPower`, `maxIaPower` — mean/max of `Power-IA Power(Watts)`
+- `avgGtPower`, `maxGtPower` — mean/max of `Power-GT Power(Watts)`
+- `avgPkgTemp`, `maxPkgTemp` — derived from per-core max temperatures
+- `avgPCoreFreqMHz`, `avgECoreFreqMHz` — split by `Core Type` column
+- `clipReasonBreakdown` — `{MAX_TURBO: 0.55, PBM_PL1: 0.2, ...}` as fractional time
+- `pkgC0Percent`, `pkgC6Percent` — average C-state residency
+- `throttlingFlags` — `["Thermal", "Power Limit"]` or `[]`
+- `timeseries[]` — array of `{t, iaPower, gtPower, coreFreqs[], coreTemps[], clipReason, c0Pct}` for chart rendering
+
+---
+
+#### [NEW] pipeline/fps_parser.py
+
+Parses FPS source CSV (PresentMon / FrameView format — TBD based on your answer above).
+
+**Extracts:**
+- `avgFps`, `1pctLow`, `0p1PctLow`, `maxFps`, `minFps`
+- `p95FrameTimeMs`, `p99FrameTimeMs` — frame time percentiles
+- `frameTimes[]` — raw array for the FrameTime chart (sampled to 500 points)
+
+---
+
+#### [NEW] pipeline/schema.py
+
+Pydantic models for validation:
+```python
+class PTATRecord(BaseModel):
+    build_id: str
+    sku_id: str
+    game_slug: str
+    avg_ia_power: float
+    ...
+
+class FPSRecord(BaseModel):
+    avg_fps: float
+    one_pct_low: float
+    ...
+```
+Validation runs on every file ingested — schema drift in CSV headers raises a clear error with the filename and offending column.
+
+---
+
+#### [NEW] pipeline/sku_map.py
+
+Maps `CPU Name` strings from PTAT to dashboard SKU IDs:
+```python
+SKU_MAP = {
+    "ARL HX (SBGA)": "arl-hx",
+    "ARL S":         "arl-s",
+    # ... all 9 ARL + 15 NVL + PTL SKUs
+}
+```
+
+---
+
+### React Data Layer (modify existing files)
+
+---
+
+#### [MODIFY] src/data/results.json *(new file, generated)*
+
+The output schema mirrors [generateGameMetricsForBuild()](file:///c:/code/gaming-dashboard/src/utils/metrics.js#67-107) exactly so no component changes:
+```json
+{
+  "2025.48_arl-hx_ff-dawntrail": {
+    "avgFps": 87,
+    "onePercentLow": 61,
+    "pointOnePercentLow": 48,
+    "maxFps": 112,
+    "minFps": 44,
+    "avgIaPower": 48.3,
+    "maxIaPower": 89.1,
+    "avgPCoreFreqMHz": 4923,
+    "avgECoreFreqMHz": 3841,
+    "avgPkgTemp": 74,
+    "maxPkgTemp": 91,
+    "clipReasonBreakdown": { "MAX_TURBO": 0.55, "PBM_PL1": 0.20 },
+    "pkgC0Percent": 78.2,
+    "pkgC6Percent": 0.0,
+    "throttling": ["Power Limit"]
+  }
+}
+```
+
+---
+
+#### [MODIFY] src/utils/metrics.js
+
+Add a `getMetrics(gameId, skuId, buildId)` function that:
+1. Tries to look up `results.json` first (real data)
+2. Falls back to [generateGameMetricsForBuild()](file:///c:/code/gaming-dashboard/src/utils/metrics.js#67-107) if not found (demo/missing data)
+
+This **zero-breaks** the existing UI — games without real data continue to show synthetic values.
+
+---
+
+#### [MODIFY] src/data/programs.js
+
+Expand to all real SKUs:
+- Arrow Lake: 9 SKUs (with iGPU/dGPU variants as separate entries or a `gpuConfig` field)
+- Nova Lake: 15 SKUs
+- Panther Lake: current 2 (or more if needed)
+
+---
+
+#### [MODIFY] src/data/builds.js
+
+Change from hardcoded array to auto-generated from available data in `results.json`:
+```js
+// Derived from results.json keys at build time
+export const builds = ['2025.48', '2025.46', '2025.44', ...];
+```
+
+---
+
+#### [MODIFY] src/hooks/useGameData.js *(new hook)*
+
+```js
+// Fetches results.json once, memoizes, exposes lookup function
+const { getMetrics, timeseries, loading } = useGameData();
+```
+
+Replaces direct calls to [generateGameMetricsForBuild()](file:///c:/code/gaming-dashboard/src/utils/metrics.js#67-107) across [GameCard](file:///c:/code/gaming-dashboard/src/components/cards/GameCard.jsx#11-370), [ProgramDashboard](file:///c:/code/gaming-dashboard/src/components/pages/ProgramDashboard.jsx#9-250), [LandingPage](file:///c:/code/gaming-dashboard/src/components/pages/LandingPage.jsx#7-153), [ComparisonPage](file:///c:/code/gaming-dashboard/src/components/comparison/ComparisonPage.jsx#10-233).
+
+---
+
+## Verification Plan
+
+### Automated (Python)
+
+```bash
+# Install deps
+pip install pandas pydantic pytest
+
+# Run tests
+pytest pipeline/tests/ -v
+```
+
+Tests to write:
+- `test_ptat_parser.py` — parses the existing `FF_Dawntrail...csv`, asserts correct column extraction, power/freq/temp means within realistic ranges
+- `test_sku_map.py` — asserts `"ARL HX (SBGA)"` → `"arl-hx"` for all known SKU name strings
+- `test_schema_validation.py` — asserts Pydantic raises on missing/renamed columns
+
+### Manual (Browser)
+
+After running the pipeline and serving the app (`npm run dev`):
+
+1. Open [http://localhost:5173](http://localhost:5173)
+2. Navigate to any program — SKU cards should show real Performance Index numbers (not seeded)
+3. Click a game with real data — GameCard should show real avgFps / 1%Low numbers
+4. Open Detailed Analysis — FrameTime chart should show real frame distribution (not smooth synthetic curve)
+5. Switch builds in sidebar — numbers should update and show real deltas (not ±3% synthetic progression)
+6. Any game without real data yet should still render (falling back to synthetic data, not crashing)

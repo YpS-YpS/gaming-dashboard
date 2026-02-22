@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { getGameImageUrl } from '../../data';
-import { generateGameMetricsForBuild } from '../../utils';
+import { useGameData } from '../../hooks/useGameData';
 import GameCard from '../cards/GameCard';
-import { Code2, Monitor, Timer, Gamepad2, Info, Cpu, Layers, Zap } from 'lucide-react';
+import { Code2, Monitor, Timer, Gamepad2, Info, Cpu } from 'lucide-react';
 
 const TechBadge = ({ icon: Icon, label, value, color }) => (
     <div className="flex items-center gap-3 p-4 bg-black/40 backdrop-blur-md rounded-xl border border-white/10">
@@ -22,7 +22,8 @@ const TechBadge = ({ icon: Icon, label, value, color }) => (
 const DemoGameCardView = ({ game, sku, buildId, isExiting }) => {
     const [heroLoaded, setHeroLoaded] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
-    const metrics = generateGameMetricsForBuild(game.id, sku.id, buildId);
+    const { getMetrics } = useGameData(sku.id, buildId);
+    const metrics = getMetrics(game.slug);
     const heroUrl = getGameImageUrl(game, 'hero');
 
     useEffect(() => {
@@ -33,6 +34,14 @@ const DemoGameCardView = ({ game, sku, buildId, isExiting }) => {
 
     // Combine entry visibility with exit state
     const showContent = isVisible && !isExiting;
+
+    if (!metrics) {
+        return (
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden font-space bg-black">
+                <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+            </div>
+        );
+    }
 
     return (
         <div className="relative w-full h-full flex items-center justify-center overflow-hidden font-space">

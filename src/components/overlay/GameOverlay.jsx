@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, Gamepad2 } from 'lucide-react';
 import { programs } from '../../data';
-import { getFpsColor, generateGameMetricsForBuild, getBuildTrend } from '../../utils';
+import { getFpsColor } from '../../utils';
+import { useGameData } from '../../hooks/useGameData';
 import GameImage from '../common/GameImage';
 import DetailedAnalysisPage from '../pages/DetailedAnalysisPage';
 
@@ -10,6 +11,7 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const scrollRef = useRef(null);
   const program = programs.find(p => p.skus.some(s => s.id === skuId));
+  const { getMetrics } = useGameData(skuId, buildId);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -89,9 +91,8 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
         {/* Game List */}
         <div className="flex-1 overflow-y-auto p-3">
           {filteredGames.map(g => {
-            const metrics = generateGameMetricsForBuild(g.id, skuId, buildId);
+            const metrics = getMetrics(g.slug);
             const isActive = g.id === game.id;
-            const { delta } = getBuildTrend(g.id, skuId, buildId);
 
             return (
               <div
@@ -114,14 +115,13 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
                   </div>
                   <div className="text-[11px] text-slate-500">{g.genre}</div>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <div className="text-base font-bold" style={{ color: getFpsColor(metrics.avgFps) }}>
-                    {metrics.avgFps}
+                {metrics && (
+                  <div className="text-right flex-shrink-0">
+                    <div className="text-base font-bold" style={{ color: getFpsColor(metrics.avgFps) }}>
+                      {Math.round(metrics.avgFps)}
+                    </div>
                   </div>
-                  <div className={`text-[10px] ${delta >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)}
-                  </div>
-                </div>
+                )}
               </div>
             );
           })}

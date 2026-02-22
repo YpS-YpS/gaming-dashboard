@@ -3,6 +3,7 @@ import { LineChart, Line, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import TrendTooltip from './tooltips/TrendTooltip';
 
 const TrendSparkline = ({ data, delta, animationDelay = 0 }) => {
+  if (!data || data.length === 0) return null;
   const minFps = Math.min(...data.map(d => d.avgFps));
   const maxFps = Math.max(...data.map(d => d.avgFps));
   const color = delta >= 0 ? '#10b981' : '#ef4444';
@@ -10,7 +11,7 @@ const TrendSparkline = ({ data, delta, animationDelay = 0 }) => {
   return (
     <div className="w-20 h-8">
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data}>
+        <LineChart data={data} key={data.map(d => d.avgFps).join(',')}>
           <YAxis domain={[minFps - 5, maxFps + 5]} hide />
           <Tooltip content={<TrendTooltip />} />
           <Line

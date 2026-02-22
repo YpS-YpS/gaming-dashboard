@@ -89,7 +89,7 @@ const GameImage = ({
         alt={game.name}
         onLoad={() => setImageLoaded(true)}
         onError={() => setImageError(true)}
-        className={`w-full h-full object-cover object-center transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+        className={`w-full h-full object-cover object-center transition-opacity duration-500 ease-out ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
       />
     </div>
   );

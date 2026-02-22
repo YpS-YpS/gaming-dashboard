@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, ArrowLeft, ArrowUpAZ, ArrowDownAZ, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { programs, builds, games } from '../../data';
-import { generateGameMetricsForBuild, getBuildTrend } from '../../utils';
+import { programs, games } from '../../data';
+import { useGameData, useAvailableBuilds } from '../../hooks/useGameData';
+
 import { GameCard, SKUCard } from '../cards';
 import GameOverlay from '../overlay/GameOverlay';
 
-export default function ProgramDashboard({ sidebarCollapsed }) {
+
+export default function ProgramDashboard() {
     const { programId, skuId, gameSlug } = useParams();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -36,10 +38,32 @@ export default function ProgramDashboard({ sidebarCollapsed }) {
         return game ? game.id : null;
     }, [expandedSlug]);
 
-    // Derived build state from query params
-    const selectedBuild = searchParams.get('build') || builds[0];
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('name-asc');
+    const [contentVisible, setContentVisible] = useState(true);
+
+    // Fade out then in when SKU changes
+    const prevSkuRef = React.useRef(selectedSku?.id);
+    useEffect(() => {
+        if (prevSkuRef.current !== selectedSku?.id) {
+            setContentVisible(false);
+            const timer = setTimeout(() => setContentVisible(true), 150);
+            prevSkuRef.current = selectedSku?.id;
+            return () => clearTimeout(timer);
+        }
+    }, [selectedSku?.id]);
+
+    // Fetch real build IDs from API for this SKU
+    const realBuilds = useAvailableBuilds(selectedSku?.id);
+
+    // Use first real build from API, or URL build param
+    const urlBuild = searchParams.get('build') || realBuilds[0] || '';
+    const effectiveBuildId = realBuilds.length > 0 ? realBuilds[0] : urlBuild;
+    const selectedBuild = effectiveBuildId;
+
+    // Real data from API — uses effectiveBuildId so it always matches the DB
+    const { getMetrics, availableSlugs, loading: dataLoading } = useGameData(selectedSku?.id, effectiveBuildId);
+
 
     // Ensure URL reflects valid state if params are missing
     useEffect(() => {
@@ -49,29 +73,40 @@ export default function ProgramDashboard({ sidebarCollapsed }) {
     }, [programId, skuId, selectedProgram, navigate]);
 
     const filteredGames = useMemo(() => {
+        // When real data exists for this SKU, only show games that have actual log files.
+        // When no real data has loaded yet (other programs, or API offline), show all games.
+        const hasRealData = availableSlugs.size > 0;
+
         return games
-            .filter(game =>
-                game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                game.genre.toLowerCase().includes(searchQuery.toLowerCase())
-            )
+            .filter(game => {
+                // Hide games with no logs when real data is available
+                if (hasRealData && !availableSlugs.has(game.slug)) return false;
+                // Text search
+                return (
+                    game.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    game.genre.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+            })
             .sort((a, b) => {
-                const metricsA = generateGameMetricsForBuild(a.id, selectedSku.id, selectedBuild);
-                const metricsB = generateGameMetricsForBuild(b.id, selectedSku.id, selectedBuild);
-                const { delta: deltaA } = getBuildTrend(a.id, selectedSku.id, selectedBuild);
-                const { delta: deltaB } = getBuildTrend(b.id, selectedSku.id, selectedBuild);
+                const metricsA = getMetrics(a.slug);
+                const metricsB = getMetrics(b.slug);
+                const fpsA = metricsA?.avgFps ?? 0;
+                const fpsB = metricsB?.avgFps ?? 0;
+                const lowA = metricsA?.onePercentLow ?? 0;
+                const lowB = metricsB?.onePercentLow ?? 0;
                 switch (sortBy) {
                     case 'name-asc': return a.name.localeCompare(b.name);
                     case 'name-desc': return b.name.localeCompare(a.name);
-                    case 'fps-desc': return metricsB.avgFps - metricsA.avgFps;
-                    case 'fps-asc': return metricsA.avgFps - metricsB.avgFps;
-                    case '1low-desc': return metricsB.onePercentLow - metricsA.onePercentLow;
-                    case '1low-asc': return metricsA.onePercentLow - metricsB.onePercentLow;
-                    case 'delta-desc': return deltaB - deltaA;
-                    case 'delta-asc': return deltaA - deltaB;
+                    case 'fps-desc': return fpsB - fpsA;
+                    case 'fps-asc': return fpsA - fpsB;
+                    case '1low-desc': return lowB - lowA;
+                    case '1low-asc': return lowA - lowB;
+                    case 'delta-desc': return 0;
+                    case 'delta-asc': return 0;
                     default: return 0;
                 }
             });
-    }, [searchQuery, selectedSku, selectedBuild, sortBy]);
+    }, [searchQuery, selectedSku, selectedBuild, sortBy, getMetrics, availableSlugs]);
 
     // Refs for scrolling
     const gameRefs = React.useRef({});
@@ -143,7 +178,7 @@ export default function ProgramDashboard({ sidebarCollapsed }) {
                         </span>
                     </div>
                     <p className="m-0 text-base text-slate-400">
-                        Gaming performance analysis · Build <span className="text-primary">{selectedBuild}</span>
+                        Gaming performance analysis{selectedBuild ? <> · Build <span className="text-primary">{selectedBuild}</span></> : ''}
                     </p>
                 </div>
                 <div className="relative">
@@ -180,7 +215,13 @@ export default function ProgramDashboard({ sidebarCollapsed }) {
             </section>
 
             {/* Game Results */}
-            <section>
+            <section
+                className="transition-all duration-500 ease-out"
+                style={{
+                    opacity: contentVisible ? 1 : 0,
+                    transform: contentVisible ? 'translateY(0)' : 'translateY(12px)',
+                }}
+            >
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-sm font-medium text-slate-400 m-0">
                         Performance Results · <span className="text-slate-50">{selectedSku.fullName}</span>
@@ -212,8 +253,26 @@ export default function ProgramDashboard({ sidebarCollapsed }) {
                     </div>
                 </div>
                 <div className="flex flex-col gap-3">
+                    {dataLoading && filteredGames.length === 0 && (
+                        <div className="flex items-center justify-center py-16">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+                                <div className="text-slate-500 text-sm">Loading performance data...</div>
+                            </div>
+                        </div>
+                    )}
+                    {!dataLoading && filteredGames.length === 0 && availableSlugs.size === 0 && (
+                        <div className="flex items-center justify-center py-16">
+                            <div className="flex flex-col items-center gap-4 text-center">
+                                <AlertTriangle size={40} className="text-slate-600" />
+                                <div className="text-lg font-medium text-slate-400">No data available for this SKU</div>
+                                <div className="text-sm text-slate-500">Performance data has not been collected for {selectedSku.fullName} yet.</div>
+                            </div>
+                        </div>
+                    )}
                     {filteredGames.map((game) => {
-                        const metrics = generateGameMetricsForBuild(game.id, selectedSku.id, selectedBuild);
+                        const metrics = getMetrics(game.slug);
+                        if (!metrics) return null;
                         return (
                             <div key={game.id} ref={el => gameRefs.current[game.id] = el}>
                                 <GameCard
@@ -224,11 +283,13 @@ export default function ProgramDashboard({ sidebarCollapsed }) {
                                     skuId={selectedSku.id}
                                     currentBuild={selectedBuild}
                                     onOpenDetail={handleOpenDetail}
+                                    hasRealData={availableSlugs.has(game.slug)}
                                 />
                             </div>
                         );
                     })}
                 </div>
+
             </section>
 
             {/* Game Detail Overlay */}

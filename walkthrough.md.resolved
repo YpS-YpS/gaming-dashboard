@@ -1,0 +1,99 @@
+# Real Gaming Data Integration — Walkthrough
+
+## What Was Built
+
+A complete **ELT pipeline + FastAPI backend** that ingests real CapFrameX JSON and PTAT Monitor CSV files and streams live performance data into the dashboard with synthetic fallback for any missing games.
+
+---
+
+## Architecture
+
+```
+WW0826_Baseline_Pcode_Ucode_patch_JEDEC/
+├── PTAT_logs/         → 12 PTAT CSVs     (power, temp, freq, C-states, clip reason)
+└── Presentmon_logs/   → 12 CapFrameX JSONs (frame times, FPS)
+        │
+        ▼
+python -m backend.etl.process_build
+        │  parses both file types, matches by game slug, writes to DuckDB
+        ▼
+backend/data/gaming_dashboard.duckdb
+        │
+        ▼
+python -m uvicorn backend.main:app --port 8000
+        │  6 REST endpoints: /api/summary, /api/timeseries, /api/programs, /api/builds, ...
+        ▼
+⚛️ React (Vite proxy → port 8000)
+   useGameData hook  → KPI metrics (avgFps, power, temp)
+   useTimeseries hook → 7 chart arrays on demand
+```
+
+---
+
+## Verified Results — NVL S WW0826 Build
+
+![NVL S Dashboard with Real Data](file:///C:/Users/bhuyansa/.gemini/antigravity/brain/b15ff158-2b28-4262-b5c2-7c56b39a3763/.system_generated/click_feedback/click_feedback_1771714229256.png)
+
+| Game | Avg FPS | 1% Low | Avg Power | Max Temp |
+|---|---|---|---|---|
+| **Cyberpunk 2077** | 98 | 71 | 138W | 93°C |
+| **Far Cry 6** | ~120 | ~85 | ~70W | ~65°C |
+| **FFXIV Dawntrail** | ~145 | ~110 | ~80W | ~70°C |
+
+---
+
+## New Files Created
+
+### Backend (`backend/`)
+| File | Purpose |
+|---|---|
+| [requirements.txt](file:///c:/code/gaming-dashboard/backend/requirements.txt) | fastapi, uvicorn, duckdb, polars, pydantic, numpy |
+| [db.py](file:///c:/code/gaming-dashboard/backend/db.py) | DuckDB schema — `game_summary` + [timeseries](file:///c:/code/gaming-dashboard/backend/main.py#184-226) tables |
+| [parsers/capframex.py](file:///c:/code/gaming-dashboard/backend/parsers/capframex.py) | Parses CapFrameX JSON → avgFps, 1%Low, 0.1%Low, 500-pt frame time chart |
+| [parsers/ptat.py](file:///c:/code/gaming-dashboard/backend/parsers/ptat.py) | Parses PTAT CSV via Polars → power/temp/freq/clip/C-state timeseries |
+| [parsers/game_map.py](file:///c:/code/gaming-dashboard/backend/parsers/game_map.py) | CapFrameX GameName/exe → dashboard game slug mapping |
+| [parsers/sku_map.py](file:///c:/code/gaming-dashboard/backend/parsers/sku_map.py) | PTAT CPU Name → dashboard SKU ID mapping |
+| [etl/process_build.py](file:///c:/code/gaming-dashboard/backend/etl/process_build.py) | CLI: scan folder, parse, merge, write to DuckDB |
+| [main.py](file:///c:/code/gaming-dashboard/backend/main.py) | FastAPI with 6 endpoints |
+
+### React (`src/`)
+| File | Purpose |
+|---|---|
+| [hooks/useGameData.js](file:///c:/code/gaming-dashboard/src/hooks/useGameData.js) | [useGameData](file:///c:/code/gaming-dashboard/src/hooks/useGameData.js#20-105) — fetches summary KPIs; [useTimeseries](file:///c:/code/gaming-dashboard/src/hooks/useGameData.js#107-144) — lazy chart fetch; [useAvailableBuilds](file:///c:/code/gaming-dashboard/src/hooks/useGameData.js#146-162) |
+
+### Config
+| File | Change |
+|---|---|
+| [vite.config.js](file:///c:/code/gaming-dashboard/vite.config.js) | Added `/api` proxy → `http://localhost:8000` |
+
+---
+
+## Data Layer Updates
+
+- **games.js**: Added 4 new games: FFXIV Dawntrail, AC Mirage, Far Cry 6, Tiny Tina's Wonderlands → catalog now has **42 games**
+- **programs.js**: NVL S updated to **28C/56T**, TDP corrected to **125W**, added `iGFX` SKU variant
+
+---
+
+## How to Run a New Build
+
+```powershell
+# From c:\code\gaming-dashboard
+python -m backend.etl.process_build `
+    --build WW0902 `
+    --input "C:\path\to\WW0902_build_folder" `
+    --sku nvl-s
+
+# Start the API server (if not already running)
+python -m uvicorn backend.main:app --port 8000 --reload
+```
+
+The dashboard will automatically pick up the new build — it appears in the build selector sidebar.
+
+---
+
+## Fallback Strategy
+
+- If the FastAPI server is unreachable, all game cards **silently fall back to synthetic data generators**
+- Games with real data show actual measured numbers; unmeasured games show seeded synthetic numbers
+- This means Arrow Lake and Panther Lake SKUs still work fully in demo mode

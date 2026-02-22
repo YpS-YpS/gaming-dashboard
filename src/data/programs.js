@@ -18,8 +18,10 @@ export const programs = [
     icon: '✨',
     color: '#22d3ee',
     skus: [
-      { id: 'nvl-s', name: 'NVL S', fullName: 'Nova Lake S Desktop', cores: '32C/40T', tdp: '150W' },
-      { id: 'nvl-s-bllc', name: 'NVL S BLLC', fullName: 'Nova Lake S BLLC', cores: '24C/32T', tdp: '125W' }
+      { id: 'nvl-sk-28c', name: 'NVL S K 28C', fullName: 'Nova Lake S K 28C', cores: '28C/28T', coreConfig: '8P + 16E + 4LPE', tdp: '125W' },
+      { id: 'nvl-sk-28c-bllc', name: 'NVL S K 28C bLLC', fullName: 'Nova Lake S K 28C bLLC', cores: '28C/28T', coreConfig: '8P + 16E + 4LPE', tdp: '125W', cache: 'bLLC' },
+      { id: 'nvl-sk-52c', name: 'NVL S K 52C', fullName: 'Nova Lake S K 52C', cores: '52C/52T', coreConfig: '16P + 32E + 4LPE', tdp: '150W' },
+      { id: 'nvl-sk-52c-bllc', name: 'NVL S K 52C bLLC', fullName: 'Nova Lake S K 52C bLLC', cores: '52C/52T', coreConfig: '16P + 32E + 4LPE', tdp: '150W', cache: 'bLLC' }
     ]
   },
   {

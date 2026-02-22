@@ -24,10 +24,21 @@ export default {
         kenburns: {
           '0%': { transform: 'scale(1)' },
           '100%': { transform: 'scale(1.25)' },
-        }
+        },
+        pulseGlow: {
+          '0%, 100%': {
+            boxShadow: '0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2)',
+            transform: 'scale(1)',
+          },
+          '50%': {
+            boxShadow: '0 0 16px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.35)',
+            transform: 'scale(1.05)',
+          },
+        },
       },
       animation: {
         kenburns: 'kenburns 20s ease-in-out infinite alternate',
+        'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
       }
     },
   },
