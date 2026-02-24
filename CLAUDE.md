@@ -105,8 +105,21 @@ python -m backend.etl.process_build --input "C:/path/to/build_folder" --sku nvl-
 - >= 30 FPS: amber `#f59e0b`
 - < 30 FPS: red `#ef4444`
 
+## Gametraces Structure
+```
+Gametraces/
+  Nova Lake/
+    NVL S K 28C/
+      WW08 BKC/           - Build folder (matches ETL expected layout)
+        PTAT_logs/*.csv
+        Presentmon_logs/*.json
+        *SystemScope*.json
+```
+New builds go under `Gametraces/<Program>/<SKU>/<Build Name>/`.
+
 ## Current State (as of Feb 2026)
 - Branch: `real-NVL-wip`
-- 12 games ingested for `nvl-sk-28c` build `NVL-S-CONS-26.03.5.139`
+- 12 games ingested for `nvl-sk-28c` build `NVL-S-CONS-26.03.5.139` (WW08 BKC)
+- Games: AC Mirage, Wukong, Civ6, Cyberpunk 2077, F1 24, Far Cry 6, FFXIV, Hitman 3, HZD Remastered, RDR2, SOTR, Tiny Tina
 - All other SKUs have no real data yet
 - DemoMode hardcoded to `nvl-sk-28c` (best data availability)
