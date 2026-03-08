@@ -1,0 +1,25 @@
+{
+  "id": "panther-lake",
+  "name": "Panther Lake",
+  "codename": "PTL",
+  "icon": "\ud83d\udc3e",
+  "color": "#f472b6",
+  "skus": [
+    {
+      "id": "ptl-u",
+      "name": "PTL U",
+      "fullName": "Panther Lake U Ultra-Mobile",
+      "cores": "12C/16T",
+      "tdp": "15W",
+      "graphics": "iGFX"
+    },
+    {
+      "id": "ptl-h",
+      "name": "PTL H",
+      "fullName": "Panther Lake H Mobile",
+      "cores": "20C/24T",
+      "tdp": "45W",
+      "graphics": "iGFX"
+    }
+  ]
+}

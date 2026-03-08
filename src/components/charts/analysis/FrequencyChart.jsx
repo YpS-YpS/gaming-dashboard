@@ -4,12 +4,21 @@ import { Cpu } from 'lucide-react';
 import { pCoreColors, eCoreColors } from '../../../utils';
 
 const FrequencyChart = ({ data, pCores, eCores }) => {
-    const [selectedCores, setSelectedCores] = useState({ pCores: [0, 1], eCores: [0] });
+    const [selectedCores, setSelectedCores] = useState(() => ({
+        pCores: pCores.map((_, i) => i),
+        eCores: eCores.map((_, i) => i),
+    }));
 
     const toggleCore = (type, index) => setSelectedCores(prev => {
         const key = type === 'p' ? 'pCores' : 'eCores';
         return { ...prev, [key]: prev[key].includes(index) ? prev[key].filter(i => i !== index) : [...prev[key], index] };
     });
+
+    const maxTime = data.length > 0 ? Math.max(...data.map(d => d.time)) : 60000;
+    const domainMax = Math.ceil(maxTime / 5000) * 5000;
+    const tickStep = domainMax <= 30000 ? 5000 : 10000;
+    const timeTicks = [];
+    for (let t = 0; t <= domainMax; t += tickStep) timeTicks.push(t);
 
     return (
         <div className="bg-[#0f0a23]/70 rounded-2xl p-6 border border-primary/15 mb-6">
@@ -54,8 +63,8 @@ const FrequencyChart = ({ data, pCores, eCores }) => {
             <ResponsiveContainer width="100%" height={220}>
                 <LineChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.1)" />
-                    <XAxis dataKey="time" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={[3000, 5800]} />
+                    <XAxis dataKey="time" type="number" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={[0, domainMax]} ticks={timeTicks} tickFormatter={(v) => `${Math.round(v / 1000)}s`} />
+                    <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={{ stroke: 'rgba(139, 92, 246, 0.2)' }} tickLine={false} domain={['dataMin - 200', 'dataMax + 200']} />
                     <Tooltip content={({ active, payload, label }) => active && payload?.length ? (
                         <div className="bg-[#0f0a28]/95 border border-pink-500/30 rounded-lg p-3 px-4 max-h-[200px] overflow-y-auto">
                             <p className="text-xs text-slate-500 mb-2">Time: {label}s</p>

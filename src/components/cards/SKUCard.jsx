@@ -28,13 +28,22 @@ const SKUCard = ({ sku, program, isSelected, onClick }) => {
       <p className="text-sm text-slate-500 m-0 mb-2">
         {sku.fullName}
       </p>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-slate-400">
           {sku.cores}
         </span>
         <span className="text-xs px-2 py-0.5 rounded-md bg-primary/10 text-slate-400">
           {sku.tdp}
         </span>
+        {sku.graphics && (
+          <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${
+            sku.graphics === 'dGFX'
+              ? 'bg-blue-500/15 text-blue-400'
+              : 'bg-amber-500/15 text-amber-400'
+          }`}>
+            {sku.graphics}{sku.gpu ? ` · ${sku.gpu}` : ''}
+          </span>
+        )}
       </div>
     </div>
   );

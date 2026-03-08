@@ -1,0 +1,18 @@
+{
+  "id": "raptor-lake-refresh",
+  "name": "Raptor Lake Refresh",
+  "codename": "RPL-R",
+  "icon": "\ud83e\udd85",
+  "color": "#fdba74",
+  "skus": [
+    {
+      "id": "rpl-r-s",
+      "name": "RPL-R S",
+      "fullName": "Raptor Lake Refresh S Desktop",
+      "cores": "24C/32T",
+      "tdp": "125W",
+      "graphics": "dGFX",
+      "gpu": "RTX 4090"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "arrow-lake-refresh",
+  "name": "Arrow Lake Refresh",
+  "codename": "ARL-R",
+  "icon": "\ud83c\udff9",
+  "color": "#c084fc",
+  "skus": [
+    {
+      "id": "arl-r-s",
+      "name": "ARL-R S",
+      "fullName": "Arrow Lake Refresh S Desktop",
+      "cores": "24C/24T",
+      "tdp": "125W",
+      "graphics": "dGFX",
+      "gpu": "RTX 5090"
+    }
+  ]
+}

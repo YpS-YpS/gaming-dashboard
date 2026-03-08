@@ -8,7 +8,7 @@ const SplashPage = ({ onComplete }) => {
         // Start exit sequence after 3.5 seconds
         const timer = setTimeout(() => {
             setExiting(true);
-            setTimeout(onComplete, 800);
+            setTimeout(onComplete, 1000);
         }, 3500);
 
         return () => clearTimeout(timer);

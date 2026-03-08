@@ -1,0 +1,35 @@
+{
+  "id": "arrow-lake",
+  "name": "Arrow Lake",
+  "codename": "ARL",
+  "icon": "\ud83c\udff9",
+  "color": "#a855f7",
+  "skus": [
+    {
+      "id": "arl-s",
+      "name": "ARL S",
+      "fullName": "Arrow Lake S Desktop",
+      "cores": "24C/24T",
+      "tdp": "125W",
+      "graphics": "dGFX",
+      "gpu": "RTX 5090"
+    },
+    {
+      "id": "arl-hx",
+      "name": "ARL HX",
+      "fullName": "Arrow Lake HX Mobile",
+      "cores": "24C/24T",
+      "tdp": "55W",
+      "graphics": "dGFX",
+      "gpu": "RTX 5090"
+    },
+    {
+      "id": "arl-h",
+      "name": "ARL H",
+      "fullName": "Arrow Lake H Mobile",
+      "cores": "16C/16T",
+      "tdp": "45W",
+      "graphics": "iGFX"
+    }
+  ]
+}

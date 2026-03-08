@@ -35,10 +35,25 @@ export default {
             transform: 'scale(1.05)',
           },
         },
+        slideInLeft: {
+          from: { transform: 'translateX(-100%)', opacity: '0' },
+          to: { transform: 'translateX(0)', opacity: '1' },
+        },
+        slideInRight: {
+          from: { transform: 'translateX(50px)', opacity: '0' },
+          to: { transform: 'translateX(0)', opacity: '1' },
+        },
+        fadeIn: {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
       },
       animation: {
         kenburns: 'kenburns 20s ease-in-out infinite alternate',
         'pulse-glow': 'pulseGlow 3s ease-in-out infinite',
+        slideInLeft: 'slideInLeft 0.3s ease-out forwards',
+        slideInRight: 'slideInRight 0.3s ease-out forwards',
+        fadeIn: 'fadeIn 0.3s ease-out forwards',
       }
     },
   },

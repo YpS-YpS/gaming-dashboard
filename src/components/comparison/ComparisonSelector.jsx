@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, Gamepad2, Cpu, GitBranch } from 'lucide-react';
-import { programs, games, getGameImageUrl } from '../../data';
+import { usePrograms, games, getGameImageUrl } from '../../data';
 import { useAvailableBuilds } from '../../hooks/useGameData';
 
 const Dropdown = ({ label, icon: Icon, value, options, onChange, renderOption, color = '#a855f7' }) => {
@@ -67,6 +67,7 @@ const Dropdown = ({ label, icon: Icon, value, options, onChange, renderOption, c
 
 const ComparisonSelector = ({ side, selection, onChange, color }) => {
   const { program, sku, build, game } = selection;
+  const { programs } = usePrograms();
   const availableBuilds = useAvailableBuilds(sku.id);
 
   const handleProgramChange = (newProgram) => {

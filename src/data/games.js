@@ -465,8 +465,7 @@ export const games = [
     ]
   },
   {
-    id: 40, slug: 'ac-mirage', name: "Assassin's Creed Mirage", genre: 'Action', steamId: null,
-    imageUrl: 'https://staticctf.ubisoft.com/J3yJr34U2pZ2Ieem48Dwy9uqj5PNUQTn/7E7bXW9lRBZakEEhMdrPOR/f31d4fae7dec11d0a76500a0c91e6bf6/AC_Mirage_Key_Art_Wide.jpg',
+    id: 40, slug: 'ac-mirage', name: "Assassin's Creed Mirage", genre: 'Action', steamId: 3035570,
     developer: 'Ubisoft Bordeaux', releaseDate: 'Oct 5, 2023',
     engine: 'Anvil Next 2.0', graphicsAPI: 'DirectX 12', benchmarkDuration: '60s',
     benchmarkScene: 'Baghdad - Grand Souk Rooftop Chase',
@@ -478,7 +477,7 @@ export const games = [
     ]
   },
   {
-    id: 41, slug: 'far-cry-6', name: 'Far Cry 6', genre: 'FPS', steamId: 1339800,
+    id: 41, slug: 'far-cry-6', name: 'Far Cry 6', genre: 'FPS', steamId: 2369390,
     developer: 'Ubisoft Toronto', releaseDate: 'Oct 7, 2021',
     engine: 'Dunia Engine 2', graphicsAPI: 'DirectX 12', benchmarkDuration: '60s',
     benchmarkScene: 'Esperanza - Downtown Combat',
@@ -502,7 +501,7 @@ export const games = [
     ]
   },
   {
-    id: 43, slug: 'hzd', name: 'Horizon Zero Dawn Remastered', genre: 'Action', steamId: 2552220,
+    id: 43, slug: 'hzd', name: 'Horizon Zero Dawn Remastered', genre: 'Action', steamId: 2561580,
     developer: 'Guerrilla Games / Nixxes Software', releaseDate: 'Oct 31, 2024',
     engine: 'Decima Engine', graphicsAPI: 'DirectX 12', benchmarkDuration: '60s',
     benchmarkScene: 'All-Mother Mountain - Open World Combat',

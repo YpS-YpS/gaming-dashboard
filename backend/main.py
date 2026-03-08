@@ -18,7 +18,8 @@ Run with:
 
 import json
 import math
-from functools import lru_cache
+import threading
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -46,54 +47,103 @@ app.add_middleware(
 
 # ── Static frontend (production build) ────────────────────────────────────────
 DIST_DIR = Path(__file__).parent.parent / "dist"
+GAMETRACES_DIR = Path(__file__).parent.parent / "Gametraces"
 
-# ── Programs manifest (mirrors src/data/programs.js) ─────────────────────────
-PROGRAMS = [
+# ── Programs manifest ────────────────────────────────────────────────────────
+FALLBACK_PROGRAMS = [
     {
         "id": "arrow-lake", "name": "Arrow Lake", "codename": "ARL",
         "icon": "🏹", "color": "#a855f7",
         "skus": [
-            {"id": "arl-s",   "name": "ARL S",   "fullName": "Arrow Lake S Desktop",       "cores": "24C/24T", "tdp": "125W"},
-            {"id": "arl-hx",  "name": "ARL HX",  "fullName": "Arrow Lake HX Mobile",       "cores": "24C/24T", "tdp": "55W"},
-            {"id": "arl-h",   "name": "ARL H",   "fullName": "Arrow Lake H Mobile",        "cores": "16C/16T", "tdp": "45W"},
+            {"id": "arl-s",   "name": "ARL S",   "fullName": "Arrow Lake S Desktop",       "cores": "24C/24T", "tdp": "125W", "graphics": "dGFX", "gpu": "RTX 5090"},
+            {"id": "arl-hx",  "name": "ARL HX",  "fullName": "Arrow Lake HX Mobile",       "cores": "24C/24T", "tdp": "55W",  "graphics": "dGFX", "gpu": "RTX 5090"},
+            {"id": "arl-h",   "name": "ARL H",   "fullName": "Arrow Lake H Mobile",        "cores": "16C/16T", "tdp": "45W",  "graphics": "iGFX"},
         ],
     },
     {
         "id": "nova-lake", "name": "Nova Lake", "codename": "NVL",
         "icon": "✨", "color": "#22d3ee",
         "skus": [
-            {"id": "nvl-sk-28c",      "name": "NVL S K 28C",      "fullName": "Nova Lake S K 28C",      "cores": "28C/28T", "coreConfig": "8P + 16E + 4LPE", "tdp": "125W"},
-            {"id": "nvl-sk-28c-bllc", "name": "NVL S K 28C bLLC", "fullName": "Nova Lake S K 28C bLLC", "cores": "28C/28T", "coreConfig": "8P + 16E + 4LPE", "tdp": "125W", "cache": "bLLC"},
-            {"id": "nvl-sk-52c",      "name": "NVL S K 52C",      "fullName": "Nova Lake S K 52C",      "cores": "52C/52T", "coreConfig": "16P + 32E + 4LPE", "tdp": "150W"},
-            {"id": "nvl-sk-52c-bllc", "name": "NVL S K 52C bLLC", "fullName": "Nova Lake S K 52C bLLC", "cores": "52C/52T", "coreConfig": "16P + 32E + 4LPE", "tdp": "150W", "cache": "bLLC"},
+            {"id": "nvl-sk-28c",      "name": "NVL S K 28C",      "fullName": "Nova Lake S K 28C",      "cores": "28C/28T", "coreConfig": "8P + 16E + 4LPE", "tdp": "125W", "graphics": "dGFX", "gpu": "RTX 5090"},
+            {"id": "nvl-sk-28c-bllc", "name": "NVL S K 28C bLLC", "fullName": "Nova Lake S K 28C bLLC", "cores": "28C/28T", "coreConfig": "8P + 16E + 4LPE", "tdp": "125W", "cache": "bLLC", "graphics": "dGFX", "gpu": "RTX 5090"},
+            {"id": "nvl-sk-52c",      "name": "NVL S K 52C",      "fullName": "Nova Lake S K 52C",      "cores": "52C/52T", "coreConfig": "16P + 32E + 4LPE", "tdp": "150W", "graphics": "dGFX", "gpu": "RTX 5090"},
+            {"id": "nvl-sk-52c-bllc", "name": "NVL S K 52C bLLC", "fullName": "Nova Lake S K 52C bLLC", "cores": "52C/52T", "coreConfig": "16P + 32E + 4LPE", "tdp": "150W", "cache": "bLLC", "graphics": "dGFX", "gpu": "RTX 5090"},
         ],
     },
     {
         "id": "panther-lake", "name": "Panther Lake", "codename": "PTL",
         "icon": "🐾", "color": "#f472b6",
         "skus": [
-            {"id": "ptl-u", "name": "PTL U", "fullName": "Panther Lake U Mobile", "cores": "8C/8T",  "tdp": "15W"},
-            {"id": "ptl-h", "name": "PTL H", "fullName": "Panther Lake H Mobile", "cores": "16C/16T","tdp": "28W"},
+            {"id": "ptl-u", "name": "PTL U", "fullName": "Panther Lake U Ultra-Mobile", "cores": "12C/16T", "tdp": "15W", "graphics": "iGFX"},
+            {"id": "ptl-h", "name": "PTL H", "fullName": "Panther Lake H Mobile",       "cores": "20C/24T", "tdp": "45W", "graphics": "iGFX"},
         ],
     },
 ]
 
 
-# ── DB connection (reconnects if stale) ───────────────────────────────────────
+def _load_programs() -> list[dict]:
+    """Load program manifests from Gametraces/*/program.json, fall back to FALLBACK_PROGRAMS."""
+    if not GAMETRACES_DIR.exists():
+        return FALLBACK_PROGRAMS
+
+    loaded = []
+    for program_dir in sorted(GAMETRACES_DIR.iterdir()):
+        manifest = program_dir / "program.json"
+        if manifest.exists():
+            try:
+                with open(manifest, "r", encoding="utf-8") as f:
+                    loaded.append(json.load(f))
+            except Exception:
+                continue
+
+    return loaded if loaded else FALLBACK_PROGRAMS
+
+
+PROGRAMS = _load_programs()
+
+
+# ── DB connection (thread-safe via per-thread cursors) ────────────────────────
 _db_conn: duckdb.DuckDBPyConnection | None = None
+_db_lock = threading.Lock()
+
+def _init_db() -> duckdb.DuckDBPyConnection:
+    """Initialise the shared parent connection (called once)."""
+    global _db_conn
+    with _db_lock:
+        if _db_conn is None:
+            _db_conn = get_connection(DEFAULT_DB_PATH, read_only=True)
+        return _db_conn
 
 def _get_db() -> duckdb.DuckDBPyConnection:
-    global _db_conn
+    """Return a thread-local cursor from the shared connection."""
     if not DEFAULT_DB_PATH.exists():
         raise HTTPException(status_code=503, detail="Database not initialised. Run the ETL pipeline first.")
-    if _db_conn is not None:
-        try:
-            _db_conn.execute("SELECT 1")
-        except Exception:
-            _db_conn = None
-    if _db_conn is None:
-        _db_conn = get_connection(DEFAULT_DB_PATH, read_only=False)
-    return _db_conn
+    parent = _init_db()
+    return parent.cursor()
+
+
+# ── Response cache (data only changes on ETL runs) ───────────────────────────
+_cache: dict[str, tuple[float, object]] = {}
+_cache_lock = threading.Lock()
+CACHE_TTL = 300  # 5 minutes
+
+def _cached(key: str, fn):
+    """Return cached result or compute via fn(). Thread-safe, TTL-based."""
+    now = time.monotonic()
+    with _cache_lock:
+        if key in _cache:
+            ts, val = _cache[key]
+            if now - ts < CACHE_TTL:
+                return val
+    result = fn()
+    with _cache_lock:
+        _cache[key] = (now, result)
+    return result
+
+def _invalidate_cache():
+    """Clear all cached responses (call after ETL)."""
+    with _cache_lock:
+        _cache.clear()
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -104,33 +154,40 @@ def health():
     return {"status": "ok", "db": str(DEFAULT_DB_PATH), "db_exists": db_ok}
 
 
+@app.post("/api/cache/clear")
+def clear_cache():
+    """Clear response cache. Call after ETL ingestion to pick up new data."""
+    _invalidate_cache()
+    return {"status": "cleared"}
+
+
 @app.get("/api/programs")
 def get_programs():
     """Return all programs and SKUs. Also annotates which have real data in the DB."""
-    if not DEFAULT_DB_PATH.exists():
-        return PROGRAMS  # Return static manifest even without DB
-
-    try:
-        con = _get_db()
-        result = con.execute("SELECT DISTINCT sku_id FROM game_summary").fetchall()
-
-        skus_with_data = {r[0] for r in result}
-    except Exception:
-        skus_with_data = set()
-
-    for program in PROGRAMS:
-        for sku in program["skus"]:
-            sku["hasData"] = sku["id"] in skus_with_data
-
-    return PROGRAMS
+    def _fetch():
+        import copy
+        programs = copy.deepcopy(PROGRAMS)
+        if not DEFAULT_DB_PATH.exists():
+            return programs
+        try:
+            con = _get_db()
+            result = con.execute("SELECT DISTINCT sku_id FROM game_summary").fetchall()
+            skus_with_data = {r[0] for r in result}
+        except Exception:
+            skus_with_data = set()
+        for program in programs:
+            for sku in program["skus"]:
+                sku["hasData"] = sku["id"] in skus_with_data
+        return programs
+    return _cached("programs", _fetch)
 
 
 @app.get("/api/builds")
 def get_builds(sku_id: Optional[str] = Query(None)):
     """Return available build IDs, optionally filtered by SKU."""
-    if not DEFAULT_DB_PATH.exists():
-        return []
-    try:
+    def _fetch():
+        if not DEFAULT_DB_PATH.exists():
+            return []
         con = _get_db()
         if sku_id:
             rows = con.execute(
@@ -141,8 +198,9 @@ def get_builds(sku_id: Optional[str] = Query(None)):
             rows = con.execute(
                 "SELECT DISTINCT build_id FROM game_summary ORDER BY build_id DESC"
             ).fetchall()
-
         return [r[0] for r in rows]
+    try:
+        return _cached(f"builds:{sku_id}", _fetch)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -156,9 +214,9 @@ def get_summary(
     Return aggregated KPI metrics for all games in a given build+sku.
     Powers: game cards, landing page performance index, comparison page.
     """
-    if not DEFAULT_DB_PATH.exists():
-        return []
-    try:
+    def _fetch():
+        if not DEFAULT_DB_PATH.exists():
+            return []
         con = _get_db()
         rows = con.execute("""
             SELECT
@@ -167,7 +225,8 @@ def get_summary(
                 avg_gpu_active_ms, avg_cpu_active_ms,
                 avg_ia_power, max_ia_power, avg_pkg_power, max_pkg_power,
                 avg_pkg_temp, max_pkg_temp,
-                avg_p_core_mhz, max_p_core_mhz, avg_e_core_mhz,
+                avg_p_core_mhz, max_p_core_mhz, min_p_core_mhz,
+                avg_e_core_mhz, max_e_core_mhz, min_e_core_mhz,
                 p_core_count, e_core_count,
                 throttling, cpu_brand, firmware, gpu, os, motherboard
             FROM game_summary
@@ -175,21 +234,20 @@ def get_summary(
             ORDER BY avg_fps DESC
         """, [build_id, sku_id]).fetchall()
 
-
         cols = [
             "game_slug", "avg_fps", "one_pct_low", "zero_one_pct_low", "max_fps", "min_fps",
             "avg_frame_time_ms", "p99_frame_time_ms",
             "avg_gpu_active_ms", "avg_cpu_active_ms",
             "avg_ia_power", "max_ia_power", "avg_pkg_power", "max_pkg_power",
             "avg_pkg_temp", "max_pkg_temp",
-            "avg_p_core_mhz", "max_p_core_mhz", "avg_e_core_mhz",
+            "avg_p_core_mhz", "max_p_core_mhz", "min_p_core_mhz",
+            "avg_e_core_mhz", "max_e_core_mhz", "min_e_core_mhz",
             "p_core_count", "e_core_count",
             "throttling", "cpu_brand", "firmware", "gpu", "os", "motherboard",
         ]
         results = []
         for row in rows:
             d = dict(zip(cols, row))
-            # Deserialize throttling JSON string
             try:
                 d["throttling"] = json.loads(d["throttling"] or "[]")
             except Exception:
@@ -197,6 +255,8 @@ def get_summary(
             results.append(d)
         return results
 
+    try:
+        return _cached(f"summary:{build_id}:{sku_id}", _fetch)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -286,7 +346,7 @@ def get_timeseries(
     build_id:   str = Query(...),
     sku_id:     str = Query(...),
     charts:     Optional[str] = Query(None, description="Comma-separated chart types: frametimes,frequency,temperature,power,clipReason,cstateResidency"),
-    max_points: int = Query(2000, description="Max data points per chart. 0 = no limit (full raw data)."),
+    max_points: int = Query(1000, description="Max data points per chart. 0 = no limit (full raw data)."),
 ):
     """
     Return chart timeseries data for the DetailedAnalysisPage.
@@ -362,9 +422,9 @@ def get_performance_index(
     sku_id: str = Query(..., description="SKU ID, e.g. nvl-s"),
 ):
     """Return per-build average FPS across all games for a SKU (performance index)."""
-    if not DEFAULT_DB_PATH.exists():
-        return []
-    try:
+    def _fetch():
+        if not DEFAULT_DB_PATH.exists():
+            return []
         con = _get_db()
         rows = con.execute("""
             SELECT build_id, AVG(avg_fps) AS perf_index, COUNT(*) AS game_count
@@ -373,11 +433,12 @@ def get_performance_index(
             GROUP BY build_id
             ORDER BY build_id DESC
         """, [sku_id]).fetchall()
-
         return [
             {"build_id": r[0], "perf_index": round(r[1], 1), "game_count": r[2]}
             for r in rows
         ]
+    try:
+        return _cached(f"perf-index:{sku_id}", _fetch)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

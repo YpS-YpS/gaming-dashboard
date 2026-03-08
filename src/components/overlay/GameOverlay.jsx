@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, Gamepad2 } from 'lucide-react';
-import { programs } from '../../data';
+import { usePrograms } from '../../data';
 import { getFpsColor } from '../../utils';
 import { useGameData } from '../../hooks/useGameData';
 import GameImage from '../common/GameImage';
@@ -10,6 +10,7 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
   const [searchQuery, setSearchQuery] = useState('');
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   const scrollRef = useRef(null);
+  const { programs } = usePrograms();
   const program = programs.find(p => p.skus.some(s => s.id === skuId));
   const { getMetrics } = useGameData(skuId, buildId);
 
@@ -196,11 +197,6 @@ const GameOverlay = ({ game, skuId, buildId, onClose, allGames, onSwitchGame, se
         <DetailedAnalysisPage game={game} skuId={skuId} buildId={buildId} />
       </div>
 
-      {/* Animations */}
-      <style>{`
-        @keyframes slideInLeft { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideInRight { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-      `}</style>
     </div>
   );
 };

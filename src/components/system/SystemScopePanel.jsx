@@ -82,7 +82,7 @@ const ScopeGroup = ({ group, isExpanded, onToggle }) => {
         <div className="border-b border-primary/5 last:border-b-0">
             <button
                 onClick={onToggle}
-                className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none cursor-pointer hover:bg-white/3 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 bg-transparent border-none cursor-pointer hover:bg-white/5 transition-colors"
             >
                 {isExpanded
                     ? <ChevronDown size={14} className="text-primary flex-shrink-0" />
@@ -185,11 +185,7 @@ const ScopeModule = ({ section, isChecked, onCheckToggle, defaultExpanded }) => 
 
 export default function SystemScopePanel({ scopeData, fallbackConfig }) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [checkedModules, setCheckedModules] = useState(() => {
-        // All checked by default
-        if (!scopeData?.sections) return new Set();
-        return new Set(scopeData.sections.map(s => s.module));
-    });
+    const [checkedModules, setCheckedModules] = useState(new Set());
 
     // If no system scope data, show the basic fallback config
     if (!scopeData || !scopeData.sections || scopeData.sections.length === 0) {

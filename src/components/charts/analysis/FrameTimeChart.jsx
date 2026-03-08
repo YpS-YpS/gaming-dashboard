@@ -60,7 +60,7 @@ const FrameTimeChart = ({ data }) => {
                         <div className="bg-[#0f0a28]/95 border rounded-lg p-3 px-4" style={{ borderColor: `${currentFrameTimeMode.color}50` }}>
                             <p className="text-xs text-slate-500 mb-1">Frame {payload[0].payload.frame}</p>
                             <p className="text-base font-semibold m-0" style={{ color: currentFrameTimeMode.color }}>
-                                {payload[0].value.toFixed(2)} {frameTimeMode === 'fps' || frameTimeMode.includes('percent') || frameTimeMode.includes('Low') ? 'FPS' : 'ms'}
+                                {payload[0].value.toFixed(2)} {frameTimeMode === 'fps' || frameTimeMode === 'onePercentLow' ? 'FPS' : 'ms'}
                             </p>
                         </div>
                     ) : null} />

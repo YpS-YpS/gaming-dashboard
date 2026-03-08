@@ -4,6 +4,12 @@ import { Gauge } from 'lucide-react';
 import { PerformanceCapabilityTooltip } from '../tooltips';
 
 const PerformanceCapabilityChart = ({ data }) => {
+    const maxTime = data.length > 0 ? Math.max(...data.map(d => d.time)) : 60000;
+    const domainMax = Math.ceil(maxTime / 5000) * 5000;
+    const tickStep = domainMax <= 30000 ? 5000 : 10000;
+    const timeTicks = [];
+    for (let t = 0; t <= domainMax; t += tickStep) timeTicks.push(t);
+
     return (
         <div className="bg-[#0f0a23]/70 rounded-2xl p-6 border border-primary/15 mb-6">
             <div className="flex items-center gap-3 mb-5">
@@ -32,14 +38,8 @@ const PerformanceCapabilityChart = ({ data }) => {
             <ResponsiveContainer width="100%" height={180}>
                 <ComposedChart data={data}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(139, 92, 246, 0.1)" />
-                    <XAxis
-                        dataKey="time"
-                        tick={{ fontSize: 10, fill: '#64748b' }}
-                        axisLine={false}
-                        tickLine={false}
-                        tickFormatter={(value) => `${Math.round(value / 1000)}k`}
-                    />
-                    <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} domain={[0, 120]} />
+                    <XAxis dataKey="time" type="number" tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} domain={[0, domainMax]} ticks={timeTicks} tickFormatter={(v) => `${Math.round(v / 1000)}s`} />
+                    <YAxis tick={{ fontSize: 10, fill: '#64748b' }} axisLine={false} tickLine={false} domain={[0, 'dataMax + 10']} />
                     <Tooltip content={<PerformanceCapabilityTooltip />} />
                     <Line type="monotone" dataKey="capability" name="Capability" stroke="#10b981" strokeWidth={2} dot={false} />
                     <Scatter dataKey="c0Active" name="C0 Active" fill="#06b6d4" />

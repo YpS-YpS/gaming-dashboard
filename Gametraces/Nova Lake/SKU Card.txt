@@ -1,1 +1,2 @@
 this folder contains all the SKU list folders for Nova Lake Program
+NVL S K 28C/28T - 8P Cores 16E Cores 4LP E Cores - TDP 125W

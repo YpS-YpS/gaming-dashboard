@@ -1,0 +1,27 @@
+{
+  "id": "raptor-lake",
+  "name": "Raptor Lake",
+  "codename": "RPL",
+  "icon": "\ud83e\udd85",
+  "color": "#fb923c",
+  "skus": [
+    {
+      "id": "rpl-s",
+      "name": "RPL S",
+      "fullName": "Raptor Lake S Desktop",
+      "cores": "24C/32T",
+      "tdp": "125W",
+      "graphics": "dGFX",
+      "gpu": "RTX 4090"
+    },
+    {
+      "id": "rpl-hx",
+      "name": "RPL HX",
+      "fullName": "Raptor Lake HX Mobile",
+      "cores": "24C/32T",
+      "tdp": "55W",
+      "graphics": "dGFX",
+      "gpu": "RTX 4090"
+    }
+  ]
+}

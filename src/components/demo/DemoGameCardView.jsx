@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { getGameImageUrl } from '../../data';
-import { useGameData } from '../../hooks/useGameData';
+import { useGameData, useTimeseries } from '../../hooks/useGameData';
 import GameCard from '../cards/GameCard';
 import { Code2, Monitor, Timer, Gamepad2, Info, Cpu } from 'lucide-react';
 
@@ -21,30 +21,54 @@ const TechBadge = ({ icon: Icon, label, value, color }) => (
 
 const DemoGameCardView = ({ game, sku, buildId, isExiting }) => {
     const [heroLoaded, setHeroLoaded] = useState(false);
-    const [isVisible, setIsVisible] = useState(false);
+    const [showCard, setShowCard] = useState(false);
+    const [showCharts, setShowCharts] = useState(false);
+    const [showDetails, setShowDetails] = useState(false);
+
     const { getMetrics } = useGameData(sku.id, buildId);
     const metrics = getMetrics(game.slug);
     const heroUrl = getGameImageUrl(game, 'hero');
+    const funFactIndex = useMemo(() =>
+        game.funFacts ? Math.floor(Math.random() * game.funFacts.length) : 0, [game.slug]);
 
+    // Pre-fetch timeseries so charts are ready when we reveal them
+    const { data: tsData, loading: tsLoading } = useTimeseries(
+        game.slug, sku.id, buildId,
+        ['frametimes', 'frequency', 'temperature', 'power'], 2000
+    );
+    const chartsReady = !tsLoading && tsData && Object.keys(tsData).length > 0;
+
+    // Phased entry
     useEffect(() => {
-        // Trigger entry animation after mount
-        const timer = setTimeout(() => setIsVisible(true), 100);
-        return () => clearTimeout(timer);
+        // Phase 2: Card fades in after background establishes
+        const t1 = setTimeout(() => setShowCard(true), 1500);
+        // Phase 4: Right details fade in
+        const t3 = setTimeout(() => setShowDetails(true), 3500);
+        return () => { clearTimeout(t1); clearTimeout(t3); };
     }, []);
 
-    // Combine entry visibility with exit state
-    const showContent = isVisible && !isExiting;
+    // Phase 3: Charts animate in — wait for BOTH data ready AND minimum delay
+    useEffect(() => {
+        if (!chartsReady || !showCard) return;
+        const t = setTimeout(() => setShowCharts(true), 1000);
+        return () => clearTimeout(t);
+    }, [chartsReady, showCard]);
+
+    // Visibility (exit fades everything)
+    const bgVisible = !isExiting;
+    const cardVisible = showCard && !isExiting;
+    const detailsVisible = showDetails && !isExiting;
 
     if (!metrics) {
         return (
-            <div className="relative w-full h-full flex items-center justify-center overflow-hidden font-space bg-black">
+            <div className="relative w-full h-full flex items-center justify-center overflow-hidden font-sans bg-black">
                 <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
             </div>
         );
     }
 
     return (
-        <div className="relative w-full h-full flex items-center justify-center overflow-hidden font-space">
+        <div className="relative w-full h-full flex items-center justify-center overflow-hidden font-sans">
             {/* Background Layer */}
             <div className="absolute inset-0 z-0">
                 <img
@@ -52,25 +76,22 @@ const DemoGameCardView = ({ game, sku, buildId, isExiting }) => {
                     alt=""
                     onLoad={() => setHeroLoaded(true)}
                     className={`
-            w-full h-full object-cover transition-opacity duration-700 ease-in-out
-            ${heroLoaded && !isExiting ? 'opacity-60' : 'opacity-0'}
-            animate-kenburns
-          `}
+                        w-full h-full object-cover transition-opacity duration-1000 ease-in-out
+                        ${heroLoaded && bgVisible ? 'opacity-60' : 'opacity-0'}
+                        animate-kenburns
+                    `}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#000814] via-[#000814]/70 to-[#000814]/30" />
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,#000814_100%)] opacity-80" />
             </div>
 
-            {/* Content Container - Full Width & Scaled Up */}
-            <div className={`
-                relative z-10 w-full h-full px-20 flex items-center transition-all duration-1000 ease-out transform
-                ${showContent ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}
-            `}>
+            {/* Content Container */}
+            <div className="relative z-10 w-full h-full px-20 flex items-center">
                 <div className="w-full grid grid-cols-12 gap-24 items-center">
 
                     {/* Left Side: Game Card */}
-                    <div className="col-span-6">
-                        <div className="pointer-events-none transform scale-110 origin-center"> {/* Slight scale up for the card itself */}
+                    <div className={`col-span-6 transition-all duration-1000 ease-out ${cardVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                        <div className="pointer-events-none transform scale-110 origin-center">
                             <GameCard
                                 game={game}
                                 metrics={metrics}
@@ -79,14 +100,15 @@ const DemoGameCardView = ({ game, sku, buildId, isExiting }) => {
                                 currentBuild={buildId}
                                 onToggle={() => { }}
                                 onOpenDetail={() => { }}
-                                iconSize={140} // Even larger icon
-                                animationDelay={1600} // Start AFTER curtain lift (1500ms)
+                                iconSize={140}
+                                animationDelay={0}
+                                showCharts={showCharts}
                             />
                         </div>
                     </div>
 
                     {/* Right Side: Details & Specs */}
-                    <div className="col-span-6 flex flex-col gap-10">
+                    <div className={`col-span-6 flex flex-col gap-10 transition-all duration-1000 ease-out ${detailsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
 
                         {/* Header Info */}
                         <div>
@@ -135,7 +157,7 @@ const DemoGameCardView = ({ game, sku, buildId, isExiting }) => {
                                     DID YOU KNOW?
                                 </div>
                                 <p className="text-slate-200 text-2xl italic leading-relaxed">
-                                    "{game.funFacts[0]}"
+                                    "{game.funFacts[funFactIndex]}"
                                 </p>
                             </div>
                         )}

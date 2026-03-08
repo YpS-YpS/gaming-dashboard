@@ -66,35 +66,37 @@ export function useGameData(skuId, buildId) {
         if (summary && summary.length > 0) {
             const real = summary.find(g => g.game_slug === gameSlug);
             if (real) {
+                const r2 = v => v != null ? Math.round(v * 100) / 100 : v;
+                const ri = v => v != null ? Math.round(v) : v;
                 return {
                     // Map API fields → dashboard field names
-                    avgFps: real.avg_fps,
-                    onePercentLow: real.one_pct_low,
-                    pointOnePercentLow: real.zero_one_pct_low,
-                    maxFps: real.max_fps,
-                    minFps: real.min_fps,
-                    avgFrameTimeMs: real.avg_frame_time_ms,
-                    p99FrameTimeMs: real.p99_frame_time_ms,
+                    avgFps: r2(real.avg_fps),
+                    onePercentLow: r2(real.one_pct_low),
+                    pointOnePercentLow: r2(real.zero_one_pct_low),
+                    maxFps: r2(real.max_fps),
+                    minFps: r2(real.min_fps),
+                    avgFrameTimeMs: r2(real.avg_frame_time_ms),
+                    p99FrameTimeMs: r2(real.p99_frame_time_ms),
                     avgCpuUsage: real.avg_cpu_active_ms ? Math.min(99, Math.round(real.avg_cpu_active_ms * 3)) : 65,
                     avgGpuUsage: real.avg_gpu_active_ms ? Math.min(99, Math.round(real.avg_gpu_active_ms * 3)) : 88,
-                    avgPower: real.avg_pkg_power ?? real.avg_ia_power,
-                    maxPower: real.max_pkg_power ?? real.max_ia_power,
-                    avgIaPower: real.avg_ia_power,
-                    maxIaPower: real.max_ia_power,
-                    avgPkgTemp: real.avg_pkg_temp,
-                    maxPkgTemp: real.max_pkg_temp,
-                    avgPackageTemp: real.avg_pkg_temp,
-                    maxPackageTemp: real.max_pkg_temp,
-                    avgPCoreFreqMHz: real.avg_p_core_mhz,
-                    maxPCoreFreqMHz: real.max_p_core_mhz,
-                    avgECoreFreqMHz: real.avg_e_core_mhz,
+                    avgPower: r2(real.avg_pkg_power ?? real.avg_ia_power),
+                    maxPower: r2(real.max_pkg_power ?? real.max_ia_power),
+                    avgIaPower: r2(real.avg_ia_power),
+                    maxIaPower: r2(real.max_ia_power),
+                    avgPkgTemp: r2(real.avg_pkg_temp),
+                    maxPkgTemp: r2(real.max_pkg_temp),
+                    avgPackageTemp: r2(real.avg_pkg_temp),
+                    maxPackageTemp: ri(real.max_pkg_temp),
+                    avgPCoreFreqMHz: ri(real.avg_p_core_mhz),
+                    maxPCoreFreqMHz: ri(real.max_p_core_mhz),
+                    avgECoreFreqMHz: ri(real.avg_e_core_mhz),
                     // Aliases used by GameCard expanded view
-                    avgPCoreMhz: real.avg_p_core_mhz,
-                    maxPCoreMhz: real.max_p_core_mhz,
-                    minPCoreMhz: null,
-                    avgECoreMhz: real.avg_e_core_mhz,
-                    maxECoreMhz: null,
-                    minECoreMhz: null,
+                    avgPCoreMhz: ri(real.avg_p_core_mhz),
+                    maxPCoreMhz: ri(real.max_p_core_mhz),
+                    minPCoreMhz: ri(real.min_p_core_mhz),
+                    avgECoreMhz: ri(real.avg_e_core_mhz),
+                    maxECoreMhz: ri(real.max_e_core_mhz),
+                    minECoreMhz: ri(real.min_e_core_mhz),
                     throttling: real.throttling ?? [],
                     pCoreCount: real.p_core_count,
                     eCoreCount: real.e_core_count,
@@ -116,14 +118,14 @@ export function useGameData(skuId, buildId) {
  * useTimeseries — lazily fetches chart timeseries for one game.
  * Call this inside DetailedAnalysisPage when the overlay opens.
  */
-export function useTimeseries(gameSlug, skuId, buildId, chartTypes = []) {
+export function useTimeseries(gameSlug, skuId, buildId, chartTypes = [], maxPoints = 0) {
     const [data, setData] = useState({});
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (!gameSlug || !skuId || !buildId) return;
         const charts = chartTypes.length > 0 ? chartTypes.join(',') : 'frametimes,frequency,temperature,power,clipReason,cstateResidency';
-        const key = `${buildId}_${skuId}_${gameSlug}_${charts}`;
+        const key = `${buildId}_${skuId}_${gameSlug}_${charts}_${maxPoints}`;
 
         if (timeseriesCache.has(key)) {
             setData(timeseriesCache.get(key));
@@ -131,7 +133,8 @@ export function useTimeseries(gameSlug, skuId, buildId, chartTypes = []) {
         }
 
         setLoading(true);
-        fetch(`${API_BASE}/timeseries/${gameSlug}?build_id=${buildId}&sku_id=${skuId}&charts=${charts}`)
+        const mpParam = maxPoints > 0 ? `&max_points=${maxPoints}` : '';
+        fetch(`${API_BASE}/timeseries/${encodeURIComponent(gameSlug)}?build_id=${encodeURIComponent(buildId)}&sku_id=${encodeURIComponent(skuId)}&charts=${charts}${mpParam}`)
             .then(r => {
                 if (!r.ok) throw new Error(`HTTP ${r.status}`);
                 return r.json();
@@ -159,8 +162,11 @@ export function useAvailableBuilds(skuId) {
 
     useEffect(() => {
         if (!skuId) return;
-        fetch(`${API_BASE}/builds?sku_id=${skuId}`)
-            .then(r => r.json())
+        fetch(`${API_BASE}/builds?sku_id=${encodeURIComponent(skuId)}`)
+            .then(r => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
             .then(setBuilds)
             .catch(() => setBuilds([]));
     }, [skuId]);

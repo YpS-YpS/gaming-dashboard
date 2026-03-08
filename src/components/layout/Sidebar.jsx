@@ -1,6 +1,6 @@
 import React from 'react';
 import { Gauge, ArrowLeftRight, Layers } from 'lucide-react';
-import { programs, games } from '../../data';
+import { usePrograms, games } from '../../data';
 
 export default function Sidebar({
     navigate,
@@ -13,6 +13,7 @@ export default function Sidebar({
     onStartDemo,
     displayBuilds = []
 }) {
+    const { programs } = usePrograms();
     return (
         <nav
             className="
@@ -28,28 +29,53 @@ export default function Sidebar({
                 className="flex items-center gap-3 cursor-pointer px-2 py-1.5 rounded-xl transition-colors hover:bg-primary/10 group mr-4 flex-shrink-0"
             >
                 <div
-                    className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0"
-                    style={{ animation: 'pulseGlow 3s ease-in-out infinite' }}
+                    className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center flex-shrink-0"
+                    style={{ animation: 'logoSequence 43s ease-in-out infinite' }}
                 >
                     <style>{`
-                        @keyframes pulseGlow {
-                            0%, 100% {
-                                box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2);
-                                transform: scale(1);
-                            }
-                            50% {
-                                box-shadow: 0 0 18px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.4);
-                                transform: scale(1.08);
-                            }
+                        @keyframes logoSequence {
+                            /* Pulse 1: 0-11.6% (0-5s) */
+                            0%     { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
+                            5.8%   { box-shadow: 0 0 18px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.4); transform: scale(1.08); filter: brightness(1); }
+                            11.6%  { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
+                            /* Pulse 2: 11.6-23.3% (5-10s) */
+                            17.4%  { box-shadow: 0 0 18px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.4); transform: scale(1.08); filter: brightness(1); }
+                            23.3%  { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
+                            /* Pulse 3: 23.3-34.9% (10-15s) */
+                            29.1%  { box-shadow: 0 0 18px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.4); transform: scale(1.08); filter: brightness(1); }
+                            34.9%  { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
+                            /* Pulse 4: 34.9-46.5% (15-20s) */
+                            40.7%  { box-shadow: 0 0 18px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.4); transform: scale(1.08); filter: brightness(1); }
+                            46.5%  { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
+                            /* Pulse 5: 46.5-58.1% (20-25s) */
+                            52.3%  { box-shadow: 0 0 18px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.4); transform: scale(1.08); filter: brightness(1); }
+                            58.1%  { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
+                            /* Pulse 6: 58.1-69.8% (25-30s) */
+                            64%    { box-shadow: 0 0 18px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.4); transform: scale(1.08); filter: brightness(1); }
+                            69.8%  { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
+                            /* Pulse 7: 69.8-81.4% (30-35s) */
+                            75.6%  { box-shadow: 0 0 18px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.4); transform: scale(1.08); filter: brightness(1); }
+                            81.4%  { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
+                            /* Pulse 8: 81.4-93% (35-40s) */
+                            87.2%  { box-shadow: 0 0 18px rgba(168,85,247,0.7), 0 0 40px rgba(6,182,212,0.4); transform: scale(1.08); filter: brightness(1); }
+                            93%    { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
+                            /* Electrify — 3s rapid burst (93-100%) */
+                            94.4%  { box-shadow: 0 0 30px rgba(0,199,253,0.9), 0 0 60px rgba(0,199,253,0.5); transform: scale(1.15); filter: brightness(1.8); }
+                            95.3%  { box-shadow: 0 0 5px rgba(168,85,247,0.3); transform: scale(0.98); filter: brightness(0.9); }
+                            96.2%  { box-shadow: 0 0 35px rgba(0,199,253,1), 0 0 70px rgba(217,70,239,0.6); transform: scale(1.18); filter: brightness(2); }
+                            97.1%  { box-shadow: 0 0 8px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(0.8); }
+                            98%    { box-shadow: 0 0 40px rgba(0,199,253,1), 0 0 80px rgba(0,199,253,0.7), 0 0 120px rgba(217,70,239,0.4); transform: scale(1.22); filter: brightness(2.5); }
+                            99%    { box-shadow: 0 0 20px rgba(168,85,247,0.5), 0 0 40px rgba(6,182,212,0.3); transform: scale(1.05); filter: brightness(1.2); }
+                            100%   { box-shadow: 0 0 8px rgba(168,85,247,0.4), 0 0 20px rgba(168,85,247,0.2); transform: scale(1); filter: brightness(1); }
                         }
                     `}</style>
-                    <Gauge size={18} className="text-white" style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.5))' }} />
+                    <Gauge size={22} className="text-white" style={{ filter: 'drop-shadow(0 0 6px rgba(255,255,255,0.5))' }} />
                 </div>
                 <div>
-                    <h1 className="m-0 text-base font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent whitespace-nowrap leading-tight">
+                    <h1 className="m-0 text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent whitespace-nowrap leading-tight">
                         Intel SIV Gaming
                     </h1>
-                    <p className="m-0 text-[10px] text-slate-500 uppercase tracking-widest whitespace-nowrap">
+                    <p className="m-0 text-[11px] text-slate-500 uppercase tracking-widest whitespace-nowrap">
                         Performance Lab
                     </p>
                 </div>

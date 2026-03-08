@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Search, ArrowLeft, ArrowUpAZ, ArrowDownAZ, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
-import { programs, games } from '../../data';
+import { usePrograms, games } from '../../data';
 import { useGameData, useAvailableBuilds } from '../../hooks/useGameData';
 
 import { GameCard, SKUCard } from '../cards';
@@ -12,6 +12,7 @@ export default function ProgramDashboard() {
     const { programId, skuId, gameSlug } = useParams();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    const { programs } = usePrograms();
 
     const selectedProgram = programs.find(p => p.id === programId) || programs[0];
 
@@ -254,12 +255,23 @@ export default function ProgramDashboard() {
                 </div>
                 <div className="flex flex-col gap-3">
                     {dataLoading && filteredGames.length === 0 && (
-                        <div className="flex items-center justify-center py-16">
-                            <div className="flex flex-col items-center gap-4">
-                                <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
-                                <div className="text-slate-500 text-sm">Loading performance data...</div>
+                        Array.from({ length: 6 }, (_, i) => (
+                            <div key={`skel-${i}`} className="rounded-2xl bg-[#140f2d]/60 border border-primary/10 px-6 py-3 flex items-center justify-between animate-pulse">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-[137px] h-[64px] rounded-xl bg-primary/10" />
+                                    <div>
+                                        <div className="h-5 w-40 rounded bg-primary/10 mb-2" />
+                                        <div className="h-3 w-20 rounded bg-primary/5" />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-8">
+                                    <div className="h-8 w-20 rounded bg-primary/10" />
+                                    <div className="h-10 w-12 rounded bg-primary/10" />
+                                    <div className="h-10 w-12 rounded bg-primary/10" />
+                                    <div className="h-10 w-12 rounded bg-primary/10" />
+                                </div>
                             </div>
-                        </div>
+                        ))
                     )}
                     {!dataLoading && filteredGames.length === 0 && availableSlugs.size === 0 && (
                         <div className="flex items-center justify-center py-16">
@@ -270,11 +282,16 @@ export default function ProgramDashboard() {
                             </div>
                         </div>
                     )}
-                    {filteredGames.map((game) => {
+                    {filteredGames.map((game, idx) => {
                         const metrics = getMetrics(game.slug);
                         if (!metrics) return null;
                         return (
-                            <div key={game.id} ref={el => gameRefs.current[game.id] = el}>
+                            <div
+                                key={game.id}
+                                ref={el => gameRefs.current[game.id] = el}
+                                className="animate-[fadeSlideIn_0.4s_ease-out_both]"
+                                style={{ animationDelay: `${idx * 80}ms` }}
+                            >
                                 <GameCard
                                     game={game}
                                     metrics={metrics}

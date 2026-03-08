@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { programs, games } from '../../data';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { usePrograms, games, getGameImageUrl } from '../../data';
 import { useAvailableBuilds, useGameData } from '../../hooks/useGameData';
 import SplashPage from '../pages/SplashPage';
 import DemoGameCardView from './DemoGameCardView';
@@ -12,18 +12,40 @@ const DemoMode = ({ isActive, onClose }) => {
     const [gameExiting, setGameExiting] = useState(false);
     const [config, setConfig] = useState(null);
     const [key, setKey] = useState(0);
+    const lastSlugRef = useRef(null);
 
     // Fetch real builds and data for the demo SKU
     const realBuilds = useAvailableBuilds(isActive ? DEMO_SKU_ID : null);
     const demoBuild = realBuilds[0] || '';
     const { availableSlugs } = useGameData(DEMO_SKU_ID, demoBuild);
 
-    // Filter games to only those with real data
-    const demoGames = games.filter(g => availableSlugs.has(g.slug));
+    // Stable demoGames list — only recompute when slug set actually changes
+    const slugKey = useMemo(() => [...availableSlugs].sort().join(','), [availableSlugs]);
+    const demoGames = useMemo(() => games.filter(g => availableSlugs.has(g.slug)), [slugKey]);
 
     // Find the NVL S program and SKU
+    const { programs } = usePrograms();
     const demoProgram = programs.find(p => p.skus.some(s => s.id === DEMO_SKU_ID));
     const demoSku = demoProgram?.skus.find(s => s.id === DEMO_SKU_ID);
+
+    // Use refs for values needed in callbacks to keep callbacks stable
+    const demoGamesRef = useRef(demoGames);
+    demoGamesRef.current = demoGames;
+    const demoSkuRef = useRef(demoSku);
+    demoSkuRef.current = demoSku;
+    const demoBuildRef = useRef(demoBuild);
+    demoBuildRef.current = demoBuild;
+    const demoProgramRef = useRef(demoProgram);
+    demoProgramRef.current = demoProgram;
+
+    // Preload all hero images when demo starts
+    useEffect(() => {
+        if (!isActive || demoGames.length === 0) return;
+        demoGames.forEach(game => {
+            const img = new Image();
+            img.src = getGameImageUrl(game, 'hero');
+        });
+    }, [isActive, demoGames.length]);
 
     // Handle Fullscreen
     useEffect(() => {
@@ -51,19 +73,35 @@ const DemoMode = ({ isActive, onClose }) => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [isActive, onClose]);
 
-    // Random Config Generator — constrained to real data
+    // Stable config picker — reads from refs, no reactive deps that change each render
     const pickRandomConfig = useCallback(() => {
-        if (!demoSku || !demoBuild || demoGames.length === 0) return null;
+        const currentGames = demoGamesRef.current;
+        const sku = demoSkuRef.current;
+        const build = demoBuildRef.current;
+        const program = demoProgramRef.current;
 
-        const randomGame = demoGames[Math.floor(Math.random() * demoGames.length)];
+        if (!sku || !build || currentGames.length === 0) return null;
+
+        let candidates = currentGames.filter(g => g.slug !== lastSlugRef.current);
+        if (candidates.length === 0) candidates = currentGames;
+
+        const randomGame = candidates[Math.floor(Math.random() * candidates.length)];
+        lastSlugRef.current = randomGame.slug;
 
         return {
             game: randomGame,
-            sku: demoSku,
-            buildId: demoBuild,
-            programId: demoProgram.id
+            sku: sku,
+            buildId: build,
+            programId: program.id
         };
-    }, [demoSku, demoBuild, demoGames, demoProgram]);
+    }, []); // stable — reads from refs
+
+    // Stable splash complete handler
+    const handleSplashComplete = useCallback(() => {
+        setConfig(pickRandomConfig());
+        setGameExiting(false);
+        setSplashOpen(false);
+    }, [pickRandomConfig]); // pickRandomConfig is stable (empty deps)
 
     // Initial Config
     useEffect(() => {
@@ -91,12 +129,6 @@ const DemoMode = ({ isActive, onClose }) => {
         return () => clearTimeout(timeout);
     }, [isActive, splashOpen]);
 
-    const handleSplashComplete = useCallback(() => {
-        setConfig(pickRandomConfig());
-        setGameExiting(false);
-        setSplashOpen(false);
-    }, [pickRandomConfig]);
-
     if (!isActive) return null;
 
     return (
@@ -114,15 +146,12 @@ const DemoMode = ({ isActive, onClose }) => {
                 </div>
             )}
 
-            {/* Layer 2: Splash Curtain (On Top) */}
-            <div
-                className={`
-            absolute inset-0 z-10 transition-transform duration-[1500ms] ease-in-out
-            ${splashOpen ? 'translate-y-0' : '-translate-y-full'}
-        `}
-            >
-                <SplashPage key={`splash-${key}`} onComplete={handleSplashComplete} />
-            </div>
+            {/* Layer 2: Splash — unmount when closed so it can't re-fire onComplete */}
+            {splashOpen && (
+                <div className="absolute inset-0 z-10">
+                    <SplashPage key={`splash-${key}`} onComplete={handleSplashComplete} />
+                </div>
+            )}
 
             {/* Overlay to indicate Demo Mode */}
             <div className="fixed bottom-8 right-8 z-[10001] bg-black/60 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full flex items-center gap-2">

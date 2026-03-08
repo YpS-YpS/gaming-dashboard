@@ -11,6 +11,12 @@ const TrendChart = ({ data, delta, deltaPercent }) => {
                 <Activity size={20} className="text-emerald-500" />
                 <span className="text-xl font-semibold text-slate-50">Build-over-Build Trend</span>
                 <DeltaBadge delta={delta} deltaPercent={deltaPercent} />
+                <div className="flex gap-4 ml-auto">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-5 h-0.5 rounded-sm" style={{ background: delta >= 0 ? '#10b981' : '#ef4444' }} />
+                        <span className="text-[11px] text-slate-500">Avg FPS</span>
+                    </div>
+                </div>
             </div>
             <ResponsiveContainer width="100%" height={150}>
                 <AreaChart data={data}>

@@ -8,7 +8,7 @@ const CustomTooltip = ({ active, payload, label, unit = '' }) => {
       <p className="text-[13px] text-slate-500 mb-1">{label}</p>
       {payload.map((entry, i) => (
         <p key={i} className="text-sm font-medium m-0" style={{ color: entry.color }}>
-          {entry.name}: {entry.value.toFixed(1)}{unit}
+          {entry.name}: {typeof entry.value === 'number' ? entry.value.toFixed(1) : '—'}{unit}
         </p>
       ))}
     </div>

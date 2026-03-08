@@ -1,6 +1,6 @@
 import React from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip } from 'recharts';
-import { programs } from '../../data';
+import { usePrograms } from '../../data';
 import { usePerformanceIndex } from '../../hooks/usePerformanceIndex';
 import DeltaBadge from '../common/DeltaBadge';
 
@@ -43,9 +43,14 @@ const SkuCard = ({ program, sku, onNavigate, isReady }) => {
           <div className="text-xs text-slate-600 uppercase mb-1">Performance Index</div>
           <div className="text-lg font-semibold text-slate-600">No data available</div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <span className="text-xs px-2.5 py-1 rounded-md bg-slate-700/20 text-slate-600">{sku.cores}</span>
           <span className="text-xs px-2.5 py-1 rounded-md bg-slate-700/20 text-slate-600">{sku.tdp}</span>
+          {sku.graphics && (
+            <span className="text-xs px-2.5 py-1 rounded-md bg-slate-700/20 text-slate-600">
+              {sku.graphics}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -110,15 +115,25 @@ const SkuCard = ({ program, sku, onNavigate, isReady }) => {
         )}
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <span className="text-xs px-2.5 py-1 rounded-md bg-primary/10 text-slate-400">{sku.cores}</span>
         <span className="text-xs px-2.5 py-1 rounded-md bg-primary/10 text-slate-400">{sku.tdp}</span>
+        {sku.graphics && (
+          <span className={`text-xs px-2.5 py-1 rounded-md font-medium ${
+            sku.graphics === 'dGFX'
+              ? 'bg-blue-500/15 text-blue-400'
+              : 'bg-amber-500/15 text-amber-400'
+          }`}>
+            {sku.graphics}{sku.gpu ? ` · ${sku.gpu}` : ''}
+          </span>
+        )}
       </div>
     </div>
   );
 };
 
 const LandingPage = ({ onNavigate, isReady = true }) => {
+  const { programs } = usePrograms();
   return (
     <div className="p-8">
       <div className="mb-10 text-center">

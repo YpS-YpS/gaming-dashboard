@@ -4,11 +4,30 @@ import { AlertTriangle } from 'lucide-react';
 import { clipReasonColors } from '../../../utils';
 
 const ClipReasonChart = ({ data }) => {
+    // Derive domain and ticks from actual data
+    const maxTime = data.length > 0
+        ? Math.max(...data.map(d => d.time))
+        : 60000;
+    const domainMax = Math.ceil(maxTime / 5000) * 5000; // round up to nearest 5s
+    const tickStep = domainMax <= 30000 ? 5000 : 10000;
+    const ticks = [];
+    for (let t = 0; t <= domainMax; t += tickStep) ticks.push(t);
+
+    const reasons = [...new Set(data.map(d => d.reason))];
+
     return (
         <div className="bg-[#0f0a23]/70 rounded-2xl p-6 border border-primary/15 mb-6">
             <div className="flex items-center gap-3 mb-5">
                 <AlertTriangle size={20} className="text-pink-500" />
                 <span className="text-xl font-semibold text-slate-50">IA Clip Reason</span>
+                <div className="flex gap-4 ml-auto">
+                    {reasons.map(reason => (
+                        <div key={reason} className="flex items-center gap-1.5">
+                            <div className="w-2 h-2 rounded-full" style={{ background: clipReasonColors[reason] || '#ec4899' }} />
+                            <span className="text-[11px] text-slate-500">{reason}</span>
+                        </div>
+                    ))}
+                </div>
             </div>
             <ResponsiveContainer width="100%" height={200}>
                 <ScatterChart margin={{ left: 20, right: 20, top: 10, bottom: 10 }}>
@@ -22,10 +41,9 @@ const ClipReasonChart = ({ data }) => {
                         tick={{ fontSize: 10, fill: '#64748b' }}
                         axisLine={false}
                         tickLine={false}
-                        domain={[0, 60000]}
-                        ticks={[0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000, 11000, 12000, 13000, 14000, 15000, 16000, 17000, 18000, 19000, 20000, 21000, 22000, 23000, 24000, 25000, 26000, 27000, 28000, 29000, 30000, 31000, 32000, 33000, 34000, 35000, 36000, 37000, 38000, 39000, 40000, 41000, 42000, 43000, 44000, 45000, 46000, 47000, 48000, 49000, 50000, 51000, 52000, 53000, 54000, 55000, 56000, 57000, 58000, 59000, 60000]}
-                        tickFormatter={(value) => `${Math.round(value / 1000)}k`}
-                        interval={0}
+                        domain={[0, domainMax]}
+                        ticks={ticks}
+                        tickFormatter={(value) => `${Math.round(value / 1000)}s`}
                     />
                     <YAxis
                         type="category"

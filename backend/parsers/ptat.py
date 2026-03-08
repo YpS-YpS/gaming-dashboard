@@ -276,6 +276,9 @@ def parse_ptat(filepath: str | Path) -> dict | None:
     avg_p_core_mhz = round(float(np.mean(p_core_avgs)), 0) if p_core_avgs else 0
     avg_e_core_mhz = round(float(np.mean(e_core_avgs)), 0) if e_core_avgs else 0
     max_p_core_mhz = round(float(np.max(p_core_avgs)), 0) if p_core_avgs else 0
+    min_p_core_mhz = round(float(np.min(p_core_avgs)), 0) if p_core_avgs else 0
+    max_e_core_mhz = round(float(np.max(e_core_avgs)), 0) if e_core_avgs else 0
+    min_e_core_mhz = round(float(np.min(e_core_avgs)), 0) if e_core_avgs else 0
 
     return {
         "sku_id":    sku_id,
@@ -299,7 +302,10 @@ def parse_ptat(filepath: str | Path) -> dict | None:
             "max_pkg_temp":   max_pkg_temp,
             "avg_p_core_mhz": avg_p_core_mhz,
             "max_p_core_mhz": max_p_core_mhz,
+            "min_p_core_mhz": min_p_core_mhz,
             "avg_e_core_mhz": avg_e_core_mhz,
+            "max_e_core_mhz": max_e_core_mhz,
+            "min_e_core_mhz": min_e_core_mhz,
             "throttling":     throttle_flags,
             "p_core_count":   len(p_core_indices),
             "e_core_count":   len(e_core_indices),

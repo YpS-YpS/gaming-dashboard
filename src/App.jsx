@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Gauge, ArrowLeftRight, Layers } from 'lucide-react';
-import { programs, games } from './data';
+import { ProgramsProvider } from './data';
 import { useAvailableBuilds } from './hooks/useGameData';
 
 
@@ -66,7 +66,7 @@ export default function GamingDashboard() {
 
   // Helper to check if a program is active based on the URL
   const isProgramActive = (programId) => {
-    return location.pathname === `/program/${programId}`;
+    return location.pathname.startsWith(`/program/${programId}`);
   };
 
   // Handle Demo Mode Deep Link
@@ -78,44 +78,46 @@ export default function GamingDashboard() {
   }, [location.pathname, navigate]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-[#1a0f2e] to-[#0d0a18] text-white font-sans overflow-hidden">
-      {showSplash && <SplashPage onComplete={() => setShowSplash(false)} />}
+    <ProgramsProvider>
+      <div className="min-h-screen bg-gradient-to-br from-background via-[#1a0f2e] to-[#0d0a18] text-white font-sans overflow-hidden">
+        {showSplash && <SplashPage onComplete={() => setShowSplash(false)} />}
 
-      <DemoMode isActive={isDemoMode} onClose={() => setIsDemoMode(false)} />
+        <DemoMode isActive={isDemoMode} onClose={() => setIsDemoMode(false)} />
 
-      {/* Background Effects */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className="absolute -top-[20%] left-[10%] w-[600px] h-[600px] bg-primary/15 rounded-full blur-3xl" />
-        <div className="absolute -bottom-[20%] right-[10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl" />
+        {/* Background Effects */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+          <div className="absolute -top-[20%] left-[10%] w-[600px] h-[600px] bg-primary/15 rounded-full blur-3xl" />
+          <div className="absolute -bottom-[20%] right-[10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl" />
+        </div>
+
+        <div className="relative flex flex-col z-10 h-screen">
+          {/* Top Navbar */}
+          <Sidebar
+            navigate={navigate}
+            location={location}
+            currentBuild={currentBuild}
+            handleBuildSelect={handleBuildSelect}
+            handleProgramSelect={handleProgramSelect}
+            handleNavigateToLanding={handleNavigateToLanding}
+            isProgramActive={isProgramActive}
+            onStartDemo={() => setIsDemoMode(true)}
+            displayBuilds={displayBuilds}
+          />
+
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth">
+            <React.Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<LandingPage onNavigate={(p, s) => navigate(`/program/${p.id}/sku/${s.id}`)} isReady={!showSplash} />} />
+                <Route path="/compare" element={<ComparisonPage />} />
+                <Route path="/program/:programId" element={<ProgramDashboard />} />
+                <Route path="/program/:programId/sku/:skuId" element={<ProgramDashboard />} />
+                <Route path="/program/:programId/sku/:skuId/game/:gameSlug" element={<ProgramDashboard />} />
+              </Routes>
+            </React.Suspense>
+          </main>
+        </div>
       </div>
-
-      <div className="relative flex flex-col z-10 h-screen">
-        {/* Top Navbar */}
-        <Sidebar
-          navigate={navigate}
-          location={location}
-          currentBuild={currentBuild}
-          handleBuildSelect={handleBuildSelect}
-          handleProgramSelect={handleProgramSelect}
-          handleNavigateToLanding={handleNavigateToLanding}
-          isProgramActive={isProgramActive}
-          onStartDemo={() => setIsDemoMode(true)}
-          displayBuilds={displayBuilds}
-        />
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth">
-          <React.Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<LandingPage onNavigate={(p) => navigate(`/program/${p.id}`)} isReady={!showSplash} />} />
-              <Route path="/compare" element={<ComparisonPage />} />
-              <Route path="/program/:programId" element={<ProgramDashboard />} />
-              <Route path="/program/:programId/sku/:skuId" element={<ProgramDashboard />} />
-              <Route path="/program/:programId/sku/:skuId/game/:gameSlug" element={<ProgramDashboard />} />
-            </Routes>
-          </React.Suspense>
-        </main>
-      </div>
-    </div>
+    </ProgramsProvider>
   );
 }

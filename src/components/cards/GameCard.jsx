@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { ResponsiveContainer, AreaChart, Area, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
-import { ChevronDown, Activity, Clock, Thermometer, Monitor, Cpu, Zap, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { ChevronDown, Activity, Thermometer, Monitor, Cpu, Zap, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
 import { getFpsColor } from '../../utils';
 import { useTimeseries } from '../../hooks/useGameData';
 import TrendSparkline from '../charts/TrendSparkline';
@@ -9,7 +9,7 @@ import DeltaBadge from '../common/DeltaBadge';
 import GameImage from '../common/GameImage';
 import MetricCard from './MetricCard';
 
-const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, onOpenDetail, iconSize = 48, animationDelay = 0 }) => {
+const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, onOpenDetail, iconSize = 64, animationDelay = 0, showCharts = true }) => {
   // Single-point trend: just the current build's FPS
   const trendData = useMemo(() => {
     if (!metrics || !currentBuild) return [];
@@ -23,13 +23,14 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
     isExpanded ? game.slug : null,
     skuId,
     currentBuild,
-    ['frametimes', 'frequency', 'temperature']
+    ['frametimes', 'frequency', 'temperature', 'power'], 2000
   );
 
   // Extract chart data from timeseries API response
   const frameTimeData = tsData?.frametimes || [];
   const frequencyData = tsData?.frequency || [];
   const tempData = tsData?.temperature || [];
+  const powerData = tsData?.power || [];
 
   const [loading, setLoading] = React.useState(!!animationDelay);
 
@@ -50,7 +51,7 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
       {/* Header Row */}
       <div
         onClick={onToggle}
-        className="p-6 flex items-center justify-between cursor-pointer"
+        className="px-3 py-3 flex items-center justify-between cursor-pointer"
       >
         <div className="flex items-center gap-4 flex-1">
           <GameImage game={game} size={iconSize} borderRadius={12} style={{ height: iconSize }} />
@@ -108,13 +109,23 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
           </div>
 
           {/* Detail Button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onOpenDetail(game); }}
-            title="Open detailed analysis"
-            className="p-2 rounded-lg border-none bg-primary/15 cursor-pointer flex items-center justify-center transition-all hover:bg-primary/25"
-          >
-            <Activity size={18} className="text-primary" />
-          </button>
+          <div className="relative flex items-center justify-center">
+            {isExpanded && (
+              <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#7c3aed] via-[#d946ef] to-[#00C7FD] animate-[beacon_1.5s_ease-out_infinite]" />
+            )}
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenDetail(game); }}
+              title="Open detailed analysis"
+              className={`
+                relative p-3 rounded-xl border-none cursor-pointer flex items-center justify-center transition-all
+                ${isExpanded
+                  ? 'bg-gradient-to-r from-[#7c3aed] via-[#d946ef] to-[#00C7FD]'
+                  : 'bg-primary/15 hover:bg-primary/25'}
+              `}
+            >
+              <Activity size={22} className={`${isExpanded ? 'text-white' : 'text-primary'}`} />
+            </button>
+          </div>
 
           <ChevronDown
             size={20}
@@ -196,41 +207,34 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
           </div>
 
           {/* Mini Charts Row */}
-          <div className="grid grid-cols-3 gap-4 mb-5">
-            {/* Frame Time */}
+          <div className="grid grid-cols-4 gap-4 mb-5">
+            {/* FPS */}
             <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10">
               <div className="flex items-center gap-2 mb-3">
-                <Clock size={14} className="text-primary" />
-                <span className="text-[15px] font-medium text-slate-200">Frame Time</span>
+                <Activity size={14} className="text-emerald-500" />
+                <span className="text-[15px] font-medium text-slate-200">FPS</span>
               </div>
-              <ResponsiveContainer width="100%" height={100}>
-                {tsLoading || frameTimeData.length === 0 ? (
-                  <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
-                ) : (
-                  <AreaChart data={frameTimeData} key={`ft-${game.id}`}>
-                    <defs>
-                      <linearGradient id="ftGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#a855f7" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="frame" hide />
-                    <YAxis domain={[0, 30]} hide />
-                    <Tooltip content={<CustomTooltip unit="ms" />} />
-                    <Area
-                      type="monotone"
-                      dataKey="frameTime"
-                      stroke="#a855f7"
-                      strokeWidth={1.5}
-                      fill="url(#ftGrad)"
-                      name="Frame Time"
-                      isAnimationActive={true}
-                      animationDuration={2000}
-                      animationEasing="ease-in-out"
-                    />
-                  </AreaChart>
+              <div className="relative h-[100px]">
+                <div className={`absolute inset-0 bg-white/5 rounded-lg transition-opacity duration-700 ${!tsLoading && frameTimeData.length > 0 && showCharts ? 'opacity-0' : 'opacity-100 animate-pulse'}`} />
+                {!tsLoading && frameTimeData.length > 0 && (
+                  <div className={`absolute inset-0 transition-opacity duration-700 ${showCharts ? 'opacity-100' : 'opacity-0'}`}>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <AreaChart data={frameTimeData} key={showCharts ? `fps-${game.id}-active` : `fps-${game.id}-pre`}>
+                        <defs>
+                          <linearGradient id="fpsGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="frame" hide />
+                        <YAxis domain={[0, 'dataMax + 20']} hide />
+                        <Tooltip content={<CustomTooltip unit=" FPS" />} />
+                        <Area type="monotone" dataKey="fps" stroke="#10b981" strokeWidth={1.5} fill="url(#fpsGrad)" name="FPS" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
-              </ResponsiveContainer>
+              </div>
             </div>
 
             {/* CPU Frequency */}
@@ -239,20 +243,28 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <Activity size={14} className="text-secondary" />
                 <span className="text-[15px] font-medium text-slate-200">CPU Frequency</span>
               </div>
-              <ResponsiveContainer width="100%" height={100}>
-                {tsLoading || frequencyData.length === 0 ? (
-                  <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
-                ) : (
-                  <LineChart data={frequencyData} key={`freq-${game.id}`}>
-                    <XAxis dataKey="time" hide />
-                    <YAxis domain={[3000, 6000]} hide />
-                    <Tooltip content={<CustomTooltip unit=" MHz" />} />
-                    <Line type="monotone" dataKey="pCore0" stroke="#06b6d4" strokeWidth={1.5} dot={false} name="P-Core 0" isAnimationActive={true} animationDuration={2000} animationEasing="ease-in-out" />
-                    <Line type="monotone" dataKey="pCore1" stroke="#22d3ee" strokeWidth={1.5} dot={false} name="P-Core 1" isAnimationActive={true} animationDuration={2200} animationEasing="ease-in-out" />
-                    <Line type="monotone" dataKey="eCore0" stroke="#a855f7" strokeWidth={1.5} dot={false} name="E-Core 0" isAnimationActive={true} animationDuration={2400} animationEasing="ease-in-out" />
-                  </LineChart>
+              <div className="relative h-[100px]">
+                <div className={`absolute inset-0 bg-white/5 rounded-lg transition-opacity duration-700 ${!tsLoading && frequencyData.length > 0 && showCharts ? 'opacity-0' : 'opacity-100 animate-pulse'}`} />
+                {!tsLoading && frequencyData.length > 0 && (
+                  <div className={`absolute inset-0 transition-opacity duration-700 ${showCharts ? 'opacity-100' : 'opacity-0'}`}>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <LineChart data={frequencyData} key={showCharts ? `freq-${game.id}-active` : `freq-${game.id}-pre`}>
+                        <XAxis dataKey="time" hide />
+                        <YAxis domain={['dataMin - 200', 'dataMax + 200']} hide />
+                        <Tooltip content={<CustomTooltip unit=" MHz" />} />
+                        <Line type="monotone" dataKey="pCore0" stroke="#a855f7" strokeWidth={1.5} dot={false} name="P-Core 0" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                        <Line type="monotone" dataKey="pCore1" stroke="#8b5cf6" strokeWidth={1.5} dot={false} name="P-Core 1" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                        <Line type="monotone" dataKey="pCore2" stroke="#7c3aed" strokeWidth={1.5} dot={false} name="P-Core 2" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                        <Line type="monotone" dataKey="pCore3" stroke="#6d28d9" strokeWidth={1.5} dot={false} name="P-Core 3" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                        <Line type="monotone" dataKey="eCore0" stroke="#10b981" strokeWidth={1.5} dot={false} name="E-Core 0" strokeDasharray="4 2" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                        <Line type="monotone" dataKey="eCore1" stroke="#059669" strokeWidth={1.5} dot={false} name="E-Core 1" strokeDasharray="4 2" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                        <Line type="monotone" dataKey="eCore2" stroke="#047857" strokeWidth={1.5} dot={false} name="E-Core 2" strokeDasharray="4 2" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                        <Line type="monotone" dataKey="eCore3" stroke="#065f46" strokeWidth={1.5} dot={false} name="E-Core 3" strokeDasharray="4 2" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
-              </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Temperature */}
@@ -261,34 +273,56 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <Thermometer size={14} className="text-rose-500" />
                 <span className="text-[15px] font-medium text-slate-200">Temperature</span>
               </div>
-              <ResponsiveContainer width="100%" height={100}>
-                {tsLoading || tempData.length === 0 ? (
-                  <div className="w-full h-full bg-white/5 animate-pulse rounded-lg" />
-                ) : (
-                  <AreaChart data={tempData} key={`temp-${game.id}`}>
-                    <defs>
-                      <linearGradient id="tempGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
-                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="time" hide />
-                    <YAxis domain={[40, 100]} hide />
-                    <Tooltip content={<CustomTooltip unit="°C" />} />
-                    <Area
-                      type="monotone"
-                      dataKey="package"
-                      stroke="#f43f5e"
-                      strokeWidth={1.5}
-                      fill="url(#tempGrad)"
-                      name="Package"
-                      isAnimationActive={true}
-                      animationDuration={2000}
-                      animationEasing="ease-in-out"
-                    />
-                  </AreaChart>
+              <div className="relative h-[100px]">
+                <div className={`absolute inset-0 bg-white/5 rounded-lg transition-opacity duration-700 ${!tsLoading && tempData.length > 0 && showCharts ? 'opacity-0' : 'opacity-100 animate-pulse'}`} />
+                {!tsLoading && tempData.length > 0 && (
+                  <div className={`absolute inset-0 transition-opacity duration-700 ${showCharts ? 'opacity-100' : 'opacity-0'}`}>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <AreaChart data={tempData} key={showCharts ? `temp-${game.id}-active` : `temp-${game.id}-pre`}>
+                        <defs>
+                          <linearGradient id="tempGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="time" hide />
+                        <YAxis domain={[40, 100]} hide />
+                        <Tooltip content={<CustomTooltip unit="°C" />} />
+                        <Area type="monotone" dataKey="package" stroke="#f43f5e" strokeWidth={1.5} fill="url(#tempGrad)" name="Package" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
-              </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Package Power */}
+            <div className="bg-[#0f0a23]/70 rounded-xl p-4 border border-primary/10">
+              <div className="flex items-center gap-2 mb-3">
+                <Zap size={14} className="text-amber-500" />
+                <span className="text-[15px] font-medium text-slate-200">Package Power</span>
+              </div>
+              <div className="relative h-[100px]">
+                <div className={`absolute inset-0 bg-white/5 rounded-lg transition-opacity duration-700 ${!tsLoading && powerData.length > 0 && showCharts ? 'opacity-0' : 'opacity-100 animate-pulse'}`} />
+                {!tsLoading && powerData.length > 0 && (
+                  <div className={`absolute inset-0 transition-opacity duration-700 ${showCharts ? 'opacity-100' : 'opacity-0'}`}>
+                    <ResponsiveContainer width="100%" height={100}>
+                      <AreaChart data={powerData} key={showCharts ? `pwr-${game.id}-active` : `pwr-${game.id}-pre`}>
+                        <defs>
+                          <linearGradient id="pwrGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <XAxis dataKey="time" hide />
+                        <YAxis domain={[0, 'dataMax + 10']} hide />
+                        <Tooltip content={<CustomTooltip unit="W" />} />
+                        <Area type="monotone" dataKey="packagePower" stroke="#f59e0b" strokeWidth={1.5} fill="url(#pwrGrad)" name="Pkg Power" isAnimationActive={showCharts} animationDuration={2000} animationEasing="ease-in-out" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -309,6 +343,10 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                   <span className="text-sm text-slate-500">Maximum</span>
                   <span className="text-[15px] font-medium text-emerald-500">{metrics.maxPCoreMhz ?? '—'} MHz</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Minimum</span>
+                  <span className="text-[15px] font-medium text-amber-500">{metrics.minPCoreMhz ?? '—'} MHz</span>
+                </div>
               </div>
             </div>
 
@@ -322,6 +360,14 @@ const GameCard = ({ game, metrics, isExpanded, onToggle, skuId, currentBuild, on
                 <div className="flex justify-between">
                   <span className="text-sm text-slate-500">Average</span>
                   <span className="text-[15px] font-medium text-primary">{metrics.avgECoreMhz ?? '—'} MHz</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Maximum</span>
+                  <span className="text-[15px] font-medium text-emerald-500">{metrics.maxECoreMhz ?? '—'} MHz</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-slate-500">Minimum</span>
+                  <span className="text-[15px] font-medium text-amber-500">{metrics.minECoreMhz ?? '—'} MHz</span>
                 </div>
               </div>
             </div>

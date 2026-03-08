@@ -1,27 +1,31 @@
 import React, { useState } from 'react';
 import { ArrowLeftRight, RefreshCw, Copy } from 'lucide-react';
-import { programs, games } from '../../data';
+import { usePrograms, games } from '../../data';
 import { useGameData, useAvailableBuilds } from '../../hooks/useGameData';
 import ComparisonSelector from './ComparisonSelector';
 import ComparisonMetrics from './ComparisonMetrics';
 import ComparisonCharts from './ComparisonCharts';
 import GameImage from '../common/GameImage';
 
-// Default to NVL S (has real data)
-const defaultProgram = programs.find(p => p.id === 'nova-lake') || programs[0];
-const defaultSku = defaultProgram.skus.find(s => s.id === 'nvl-sk-28c') || defaultProgram.skus[0];
-
 const ComparisonPage = () => {
+  const { programs } = usePrograms();
+
+  const [defaults] = useState(() => {
+    const prog = programs.find(p => p.id === 'nova-lake') || programs[0];
+    const sku = prog.skus.find(s => s.id === 'nvl-sk-28c') || prog.skus[0];
+    return { prog, sku };
+  });
+
   const [leftSelection, setLeftSelection] = useState({
-    program: defaultProgram,
-    sku: defaultSku,
+    program: defaults.prog,
+    sku: defaults.sku,
     build: '',
     game: games[0]
   });
 
   const [rightSelection, setRightSelection] = useState({
-    program: defaultProgram,
-    sku: defaultSku,
+    program: defaults.prog,
+    sku: defaults.sku,
     build: '',
     game: games.length > 1 ? games[1] : games[0]
   });

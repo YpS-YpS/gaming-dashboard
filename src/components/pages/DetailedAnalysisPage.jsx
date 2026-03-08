@@ -2,7 +2,7 @@ import React, { useState, Component } from 'react';
 
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Gauge, Settings, Monitor, Layers, ChevronDown, ChevronUp, Timer, Code2, Gamepad2, Info, Cpu } from 'lucide-react';
-import { programs, getGameImageUrl } from '../../data';
+import { usePrograms, getGameImageUrl } from '../../data';
 import { getFpsColor } from '../../utils';
 import { useGameData, useTimeseries } from '../../hooks/useGameData';
 import { useSystemConfig } from '../../hooks/useSystemConfig';
@@ -21,6 +21,7 @@ import ClipReasonChart from '../charts/analysis/ClipReasonChart';
 import TemperatureChart from '../charts/analysis/TemperatureChart';
 import PowerChart from '../charts/analysis/PowerChart';
 import TrendChart from '../charts/analysis/TrendChart';
+import LazyChart from '../charts/analysis/LazyChart';
 
 
 // Error Boundary Component
@@ -35,7 +36,7 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white flex items-center justify-center font-space p-10">
+        <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white flex items-center justify-center font-sans p-10">
           <div className="text-center max-w-[600px]">
             <div className="text-5xl mb-4">⚠️</div>
             <div className="text-xl text-red-500 mb-3">Something went wrong</div>
@@ -125,6 +126,7 @@ const DetailedAnalysisPage = ({ game, skuId, buildId, isDemoMode = false }) => {
   const navigate = useNavigate();
   const { programId } = useParams();
   const [searchParams] = useSearchParams();
+  const { programs } = usePrograms();
   const [openFaqIndex, setOpenFaqIndex] = useState(0);
   const [heroLoaded, setHeroLoaded] = useState(false);
   const [heroError, setHeroError] = useState(false);
@@ -195,7 +197,7 @@ const DetailedAnalysisPage = ({ game, skuId, buildId, isDemoMode = false }) => {
   // Defensive check - return early if required props missing or no data yet
   if (!game || !skuId || !buildId || !metrics) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white flex items-center justify-center font-space">
+      <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white flex items-center justify-center font-sans">
         <div className="text-center">
           <div className="text-5xl mb-4">🎮</div>
           <div className="text-lg text-slate-500">{!metrics && game ? 'Loading performance data...' : 'Loading game data...'}</div>
@@ -215,7 +217,7 @@ const DetailedAnalysisPage = ({ game, skuId, buildId, isDemoMode = false }) => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white font-space">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f0a1e] via-[#1a0f2e] to-[#0d0a18] text-white font-sans">
       {/* Hero Section with Game Backdrop */}
       <div className={`relative overflow-hidden transition-all duration-500 ${isDemoMode ? 'min-h-[75vh]' : 'min-h-[420px]'}`}>
         {/* Background Image */}
@@ -403,39 +405,38 @@ const DetailedAnalysisPage = ({ game, skuId, buildId, isDemoMode = false }) => {
           </div>
         </div>
 
-        {/* Frame Time Analysis */}
-        {detailedFrameTimeData.length > 0 && <FrameTimeChart data={detailedFrameTimeData} />}
+        {/* Charts — skeletons shown while loading, then stagger in */}
+        <LazyChart loading={tsLoading} hasData={detailedFrameTimeData.length > 0} delay={0} height={200}>
+          <FrameTimeChart data={detailedFrameTimeData} />
+        </LazyChart>
 
-        {/* Per-Core Frequency */}
-        {perCoreData.length > 0 && <FrequencyChart data={perCoreData} pCores={pCores} eCores={eCores} />}
+        <LazyChart loading={tsLoading} hasData={perCoreData.length > 0} delay={500} height={200}>
+          <FrequencyChart data={perCoreData} pCores={pCores} eCores={eCores} />
+        </LazyChart>
 
-        {/* CPU Residency vs. Relative Time - Full width */}
-        {cpuResidencyData.length > 0 && <CpuResidencyChart data={cpuResidencyData} />}
+        <LazyChart loading={tsLoading} hasData={cpuResidencyData.length > 0} delay={1000} height={180}>
+          <CpuResidencyChart data={cpuResidencyData} />
+        </LazyChart>
 
-        {/* Performance Capability & C-State - Full width */}
-        {performanceCapabilityData.length > 0 && <PerformanceCapabilityChart data={performanceCapabilityData} />}
+        <LazyChart loading={tsLoading} hasData={performanceCapabilityData.length > 0} delay={1500} height={180}>
+          <PerformanceCapabilityChart data={performanceCapabilityData} />
+        </LazyChart>
 
-        {/* IA Clip Reason */}
-        {clipReasonDataRaw.length > 0 && <ClipReasonChart data={clipReasonDataRaw} />}
+        <LazyChart loading={tsLoading} hasData={clipReasonDataRaw.length > 0} delay={2000} height={200}>
+          <ClipReasonChart data={clipReasonDataRaw} />
+        </LazyChart>
 
-        {/* Per-Core Temperature */}
-        {perCoreTemperatureData.length > 0 && <TemperatureChart data={perCoreTemperatureData} tempCoreCount={tempCoreCount} />}
+        <LazyChart loading={tsLoading} hasData={perCoreTemperatureData.length > 0} delay={2500} height={200}>
+          <TemperatureChart data={perCoreTemperatureData} tempCoreCount={tempCoreCount} pCoreCount={pCoreCount} eCoreCount={eCoreCount} />
+        </LazyChart>
 
-        {/* Power */}
-        {powerDataRaw.length > 0 && <PowerChart data={powerDataRaw} />}
+        <LazyChart loading={tsLoading} hasData={powerDataRaw.length > 0} delay={3000} height={180}>
+          <PowerChart data={powerDataRaw} />
+        </LazyChart>
 
-        {/* Build Trend */}
-        {trendData.length > 0 && <TrendChart data={trendData} delta={delta} deltaPercent={deltaPercent} />}
-
-        {/* Loading indicator for timeseries */}
-        {tsLoading && (
-          <div className="flex items-center justify-center py-8">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 border-3 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <span className="text-sm text-slate-500">Loading chart data...</span>
-            </div>
-          </div>
-        )}
+        <LazyChart loading={tsLoading} hasData={trendData.length > 0} delay={3500} height={150}>
+          <TrendChart data={trendData} delta={delta} deltaPercent={deltaPercent} />
+        </LazyChart>
 
 
         {/* System Scope / Configuration */}

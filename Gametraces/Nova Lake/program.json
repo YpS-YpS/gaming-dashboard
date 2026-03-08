@@ -1,0 +1,51 @@
+{
+  "id": "nova-lake",
+  "name": "Nova Lake",
+  "codename": "NVL",
+  "icon": "\u2728",
+  "color": "#22d3ee",
+  "skus": [
+    {
+      "id": "nvl-sk-28c",
+      "name": "NVL S K 28C",
+      "fullName": "Nova Lake S K 28C",
+      "cores": "28C/28T",
+      "coreConfig": "8P + 16E + 4LPE",
+      "tdp": "125W",
+      "graphics": "dGFX",
+      "gpu": "RTX 5090"
+    },
+    {
+      "id": "nvl-sk-28c-bllc",
+      "name": "NVL S K 28C bLLC",
+      "fullName": "Nova Lake S K 28C bLLC",
+      "cores": "28C/28T",
+      "coreConfig": "8P + 16E + 4LPE",
+      "tdp": "125W",
+      "cache": "bLLC",
+      "graphics": "dGFX",
+      "gpu": "RTX 5090"
+    },
+    {
+      "id": "nvl-sk-52c",
+      "name": "NVL S K 52C",
+      "fullName": "Nova Lake S K 52C",
+      "cores": "52C/52T",
+      "coreConfig": "16P + 32E + 4LPE",
+      "tdp": "150W",
+      "graphics": "dGFX",
+      "gpu": "RTX 5090"
+    },
+    {
+      "id": "nvl-sk-52c-bllc",
+      "name": "NVL S K 52C bLLC",
+      "fullName": "Nova Lake S K 52C bLLC",
+      "cores": "52C/52T",
+      "coreConfig": "16P + 32E + 4LPE",
+      "tdp": "150W",
+      "cache": "bLLC",
+      "graphics": "dGFX",
+      "gpu": "RTX 5090"
+    }
+  ]
+}
