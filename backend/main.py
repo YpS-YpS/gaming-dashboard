@@ -205,6 +205,73 @@ def get_builds(sku_id: Optional[str] = Query(None)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/build-tree")
+def get_build_tree(sku_id: Optional[str] = Query(None)):
+    """Return builds organized as BKC + experiment branches."""
+    def _fetch():
+        if not DEFAULT_DB_PATH.exists():
+            return []
+        con = _get_db()
+
+        query = """
+            SELECT DISTINCT build_id,
+                   COALESCE(build_type, 'bkc') as build_type,
+                   parent_bkc,
+                   COUNT(DISTINCT game_slug) as game_count
+            FROM game_summary
+        """
+        params = []
+        if sku_id:
+            query += " WHERE sku_id = ?"
+            params.append(sku_id)
+        query += " GROUP BY build_id, build_type, parent_bkc ORDER BY build_id DESC"
+
+        rows = con.execute(query, params).fetchall()
+
+        # Organize into tree: BKCs with nested experiments
+        bkc_map = {}
+        experiments = []
+
+        for build_id_val, build_type, parent_bkc, game_count in rows:
+            if build_type == "experiment" and parent_bkc:
+                experiments.append({
+                    "build_id": build_id_val,
+                    "game_count": game_count,
+                    "parent_bkc": parent_bkc,
+                })
+            else:
+                bkc_map[build_id_val] = {
+                    "build_id": build_id_val,
+                    "type": "bkc",
+                    "game_count": game_count,
+                    "experiments": [],
+                }
+
+        # Attach experiments to their parent BKCs
+        for exp in experiments:
+            parent = exp["parent_bkc"]
+            if parent in bkc_map:
+                bkc_map[parent]["experiments"].append({
+                    "build_id": exp["build_id"],
+                    "game_count": exp["game_count"],
+                })
+            else:
+                bkc_map[exp["build_id"]] = {
+                    "build_id": exp["build_id"],
+                    "type": "experiment",
+                    "game_count": exp["game_count"],
+                    "parent_bkc": parent,
+                    "experiments": [],
+                }
+
+        return list(bkc_map.values())
+
+    try:
+        return _cached(f"build-tree:{sku_id}", _fetch)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/api/summary")
 def get_summary(
     build_id: str = Query(..., description="Build ID, e.g. WW0826"),
