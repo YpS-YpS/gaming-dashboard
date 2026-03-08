@@ -17,6 +17,23 @@ PTAT_CPU_NAME_TO_SKU: dict[str, str] = {
     # Panther Lake
     "PTL U":              "ptl-u",
     "PTL H":              "ptl-h",
+    # Raptor Lake
+    "RPL S":              "rpl-s",
+    "RPL HX":             "rpl-hx",
+}
+
+# Short PTAT SKU -> full dashboard SKU IDs (used by ingestion wizard)
+PTAT_SKU_TO_DASHBOARD_SKU: dict[str, list[str]] = {
+    "nvl-s":        ["nvl-sk-28c", "nvl-sk-28c-bllc", "nvl-sk-52c", "nvl-sk-52c-bllc"],
+    "nvl-s-bllc":   ["nvl-sk-28c-bllc", "nvl-sk-52c-bllc"],
+    "nvl-s-igfx":   ["nvl-s-igfx"],
+    "arl-s":        ["arl-s"],
+    "arl-hx":       ["arl-hx"],
+    "arl-h":        ["arl-h"],
+    "ptl-u":        ["ptl-u"],
+    "ptl-h":        ["ptl-h"],
+    "rpl-s":        ["rpl-s"],
+    "rpl-hx":       ["rpl-hx"],
 }
 
 # Folder name fragment → SKU ID (fallback when multiple SKUs share a folder)

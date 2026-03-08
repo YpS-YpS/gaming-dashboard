@@ -134,6 +134,20 @@ PTAT_FILENAME_PREFIX_TO_SLUG: dict[str, str] = {
     "Enshrouded":   "enshrouded",
     "Helldivers2":  "helldivers2",
     "Hades2":       "hades2",
+    # Automation PTAT filename slugs (ptat_<game-slug>_<ip>_<date>.csv)
+    "ptat_assassins-creed-mirage":      "ac-mirage",
+    "ptat_black-myth-wukong":           "wukong",
+    "ptat_cyberpunk-2077":              "cb2077",
+    "ptat_f1-24":                       "f1-24",
+    "ptat_far-cry-6":                   "far-cry-6",
+    "ptat_final-fantasy-xiv":           "ffxiv",
+    "ptat_hitman-3":                    "hitman3",
+    "ptat_horizon-zero-dawn":           "hzd",
+    "ptat_red-dead-redemption":         "rdr2",
+    "ptat_shadow-of-the-tomb-raider":   "sotr",
+    "ptat_sid-meiers-civilization":      "civ6",
+    "ptat_tiny-tina":                   "tiny-tina",
+    "ptat_counter-strike":              "cs2",
 }
 
 

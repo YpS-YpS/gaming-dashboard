@@ -65,6 +65,9 @@ def init_schema(db_path: Path = DEFAULT_DB_PATH) -> None:
             gpu                 TEXT,
             os                  TEXT,
             motherboard         TEXT,
+            -- Build classification
+            build_type          TEXT DEFAULT 'bkc',      -- 'bkc' or 'experiment'
+            parent_bkc          TEXT,                     -- NULL for BKC, parent build_id for experiments
             -- Metadata
             created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (build_id, sku_id, game_slug)
@@ -127,6 +130,7 @@ def upsert_summary(con: duckdb.DuckDBPyConnection, row: dict) -> None:
             ?, ?,
             ?,
             ?, ?, ?, ?, ?,
+            ?, ?,
             CURRENT_TIMESTAMP
         )
     """, [
@@ -144,6 +148,7 @@ def upsert_summary(con: duckdb.DuckDBPyConnection, row: dict) -> None:
         json.dumps(row.get("throttling", [])),
         row.get("cpu_brand", ""), row.get("firmware", ""),
         row.get("gpu", ""), row.get("os", ""), row.get("motherboard", ""),
+        row.get("build_type", "bkc"), row.get("parent_bkc"),
     ])
 
 
