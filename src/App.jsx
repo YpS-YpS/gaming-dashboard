@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
-import { Gauge, ArrowLeftRight, Layers } from 'lucide-react';
 import { ProgramsProvider } from './data';
 import { useAvailableBuilds } from './hooks/useGameData';
+import { useBuildTree } from './hooks/useBuildTree';
 
 
 // Lazy load pages
@@ -29,6 +29,7 @@ import DemoMode from './components/demo/DemoMode';
 export default function GamingDashboard() {
   const [showSplash, setShowSplash] = useState(true);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -44,6 +45,9 @@ export default function GamingDashboard() {
 
   // displayBuilds: use real builds from API (empty if no data for this SKU)
   const displayBuilds = realBuilds;
+
+  // Build tree for sidebar
+  const { tree: buildTree } = useBuildTree(skuIdFromUrl);
 
   // Get current build from URL or default to first available build
   const currentBuild = searchParams.get('build') || displayBuilds[0];
@@ -90,8 +94,8 @@ export default function GamingDashboard() {
           <div className="absolute -bottom-[20%] right-[10%] w-[500px] h-[500px] bg-secondary/10 rounded-full blur-3xl" />
         </div>
 
-        <div className="relative flex flex-col z-10 h-screen">
-          {/* Top Navbar */}
+        <div className="relative flex z-10 h-screen">
+          {/* Left Sidebar */}
           <Sidebar
             navigate={navigate}
             location={location}
@@ -102,6 +106,9 @@ export default function GamingDashboard() {
             isProgramActive={isProgramActive}
             onStartDemo={() => setIsDemoMode(true)}
             displayBuilds={displayBuilds}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            buildTree={buildTree}
           />
 
           {/* Main Content */}
