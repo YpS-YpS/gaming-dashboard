@@ -1,1 +1,1 @@
-"""Ingestion pipeline for the gaming dashboard."""
+"""Ingestion pipeline — Sources, Browse, Workbench, Review, Push."""
