@@ -63,7 +63,7 @@ const Workbench = forwardRef(function Workbench(props, ref) {
           games: [...wb.games, {
             ...game,
             source_run: run?.folder || run?.name || '',
-            source_path: run?.path || '',
+            source_path: game.game_path || run?.path || '',
           }],
         };
       });
