@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, X, ScanSearch, Loader2 } from 'lucide-react';
+import { Plus, X, Search, Loader2 } from 'lucide-react';
 
 const TYPE_COLORS = {
   'raptor-x': 'bg-cyan-500',
@@ -134,7 +134,7 @@ export default function SourceManager({ onScanComplete, onScanning }) {
             : 'bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/30'
         }`}
       >
-        {scanning ? <Loader2 size={14} className="animate-spin" /> : <ScanSearch size={14} />}
+        {scanning ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
         {scanning ? 'Scanning...' : 'Scan All'}
       </button>
     </div>
