@@ -30,6 +30,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 from .db import DEFAULT_DB_PATH, get_connection
+from backend.ingestion.routes import router as ingestion_router
 
 # ── App setup ─────────────────────────────────────────────────────────────────
 app = FastAPI(
@@ -41,9 +42,11 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],   # Tighten in production
-    allow_methods=["GET"],
+    allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["*"],
 )
+
+app.include_router(ingestion_router)
 
 # ── Static frontend (production build) ────────────────────────────────────────
 DIST_DIR = Path(__file__).parent.parent / "dist"
@@ -122,6 +125,31 @@ def _get_db() -> duckdb.DuckDBPyConnection:
     return parent.cursor()
 
 
+# ── Writable connection for ingestion operations ─────────────────────────────
+_db_write_conn: duckdb.DuckDBPyConnection | None = None
+_db_write_lock = threading.Lock()
+
+def init_db_write() -> duckdb.DuckDBPyConnection | None:
+    """Lazily open a writable DB connection (called on first ingestion request)."""
+    global _db_write_conn
+    with _db_write_lock:
+        if _db_write_conn is not None:
+            return _db_write_conn
+        try:
+            from . import db as _db_module
+            _db_write_path = Path(__file__).parent / "data" / "gaming_dashboard.duckdb"
+            _db_write_path.parent.mkdir(parents=True, exist_ok=True)
+            _db_write_conn = duckdb.connect(str(_db_write_path), read_only=False)
+            _db_module.init_schema(_db_write_conn)  # Ensure ingestion tables exist
+            app.state.db_write = _db_write_conn
+            return _db_write_conn
+        except Exception as e:
+            print(f"Warning: Could not open writable DB: {e}")
+            return None
+
+app.state.db_write = None  # Will be lazily initialised by init_db_write()
+
+
 # ── Response cache (data only changes on ETL runs) ───────────────────────────
 _cache: dict[str, tuple[float, object]] = {}
 _cache_lock = threading.Lock()
@@ -139,6 +167,9 @@ def _cached(key: str, fn):
     with _cache_lock:
         _cache[key] = (now, result)
     return result
+
+app.state.cache = _cache
+
 
 def _invalidate_cache():
     """Clear all cached responses (call after ETL)."""
@@ -159,6 +190,37 @@ def clear_cache():
     """Clear response cache. Call after ETL ingestion to pick up new data."""
     _invalidate_cache()
     return {"status": "cleared"}
+
+
+@app.post("/api/db/release")
+def release_db():
+    """Close the DB connection so ETL tools can write. Call before ingestion."""
+    global _db_conn
+    with _db_lock:
+        if _db_conn is not None:
+            try:
+                _db_conn.close()
+            except Exception:
+                pass
+            _db_conn = None
+    _invalidate_cache()
+    return {"status": "released"}
+
+
+@app.post("/api/db/reacquire")
+def reacquire_db():
+    """Reopen the DB connection after ETL. Call after ingestion."""
+    global _db_conn
+    with _db_lock:
+        if _db_conn is not None:
+            try:
+                _db_conn.close()
+            except Exception:
+                pass
+            _db_conn = None
+    # Next _get_db() call will reinitialize
+    _invalidate_cache()
+    return {"status": "reacquired"}
 
 
 @app.get("/api/programs")
@@ -217,6 +279,7 @@ def get_build_tree(sku_id: Optional[str] = Query(None)):
             SELECT DISTINCT build_id,
                    COALESCE(build_type, 'bkc') as build_type,
                    parent_bkc,
+                   experiment_label,
                    COUNT(DISTINCT game_slug) as game_count
             FROM game_summary
         """
@@ -224,7 +287,7 @@ def get_build_tree(sku_id: Optional[str] = Query(None)):
         if sku_id:
             query += " WHERE sku_id = ?"
             params.append(sku_id)
-        query += " GROUP BY build_id, build_type, parent_bkc ORDER BY build_id DESC"
+        query += " GROUP BY build_id, build_type, parent_bkc, experiment_label ORDER BY build_id DESC"
 
         rows = con.execute(query, params).fetchall()
 
@@ -232,12 +295,13 @@ def get_build_tree(sku_id: Optional[str] = Query(None)):
         bkc_map = {}
         experiments = []
 
-        for build_id_val, build_type, parent_bkc, game_count in rows:
+        for build_id_val, build_type, parent_bkc, exp_label, game_count in rows:
             if build_type == "experiment" and parent_bkc:
                 experiments.append({
                     "build_id": build_id_val,
                     "game_count": game_count,
                     "parent_bkc": parent_bkc,
+                    "label": exp_label,
                 })
             else:
                 bkc_map[build_id_val] = {
@@ -250,17 +314,21 @@ def get_build_tree(sku_id: Optional[str] = Query(None)):
         # Attach experiments to their parent BKCs
         for exp in experiments:
             parent = exp["parent_bkc"]
+            exp_node = {
+                "build_id": exp["build_id"],
+                "game_count": exp["game_count"],
+            }
+            if exp.get("label"):
+                exp_node["label"] = exp["label"]
             if parent in bkc_map:
-                bkc_map[parent]["experiments"].append({
-                    "build_id": exp["build_id"],
-                    "game_count": exp["game_count"],
-                })
+                bkc_map[parent]["experiments"].append(exp_node)
             else:
                 bkc_map[exp["build_id"]] = {
                     "build_id": exp["build_id"],
                     "type": "experiment",
                     "game_count": exp["game_count"],
                     "parent_bkc": parent,
+                    "label": exp.get("label"),
                     "experiments": [],
                 }
 
