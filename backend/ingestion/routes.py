@@ -154,7 +154,16 @@ def scan_sources(body: ScanRequest, request: Request):
         except Exception as e:
             errors.append({"source_id": source["id"], "error": str(e)})
 
-    return {"runs": all_runs, "errors": errors}
+    # Sort by date descending
+    all_runs.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+    total_games = sum(r.get("game_count", 0) for r in all_runs)
+
+    return {
+        "runs": all_runs,
+        "errors": errors,
+        "total_runs": len(all_runs),
+        "total_games": total_games,
+    }
 
 
 # ── 5. GET /runs/files — list files in a run folder ─────────────────────────

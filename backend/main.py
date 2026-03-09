@@ -669,6 +669,9 @@ if DIST_DIR.exists():
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
         """Serve index.html for all non-API routes (SPA client-side routing)."""
+        # Never intercept API routes — let FastAPI routers handle them
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Not found")
         file_path = DIST_DIR / full_path
         if file_path.exists() and file_path.is_file():
             return FileResponse(file_path)
