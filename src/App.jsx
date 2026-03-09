@@ -9,6 +9,7 @@ import { useBuildTree } from './hooks/useBuildTree';
 const LandingPage = React.lazy(() => import('./components/pages/LandingPage'));
 const ComparisonPage = React.lazy(() => import('./components/comparison').then(module => ({ default: module.ComparisonPage })));
 const ProgramDashboard = React.lazy(() => import('./components/pages/ProgramDashboard'));
+const IngestionPage = React.lazy(() => import('./components/ingestion/IngestionPage'));
 
 // Loading Fallback
 const PageLoader = () => (
@@ -120,6 +121,7 @@ export default function GamingDashboard() {
                 <Route path="/program/:programId" element={<ProgramDashboard />} />
                 <Route path="/program/:programId/sku/:skuId" element={<ProgramDashboard />} />
                 <Route path="/program/:programId/sku/:skuId/game/:gameSlug" element={<ProgramDashboard />} />
+                <Route path="/ingestion" element={<React.Suspense fallback={<PageLoader />}><IngestionPage /></React.Suspense>} />
               </Routes>
             </React.Suspense>
           </main>

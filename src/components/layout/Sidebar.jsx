@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Gauge, ArrowLeftRight, Layers, ChevronLeft, ChevronRight, Cpu, GitBranch } from 'lucide-react';
+import { Gauge, ArrowLeftRight, Layers, ChevronLeft, ChevronRight, Cpu, GitBranch, UploadCloud } from 'lucide-react';
 import { usePrograms, games } from '../../data';
 import BuildTree from './BuildTree';
 
@@ -232,6 +232,24 @@ export default function Sidebar({
                 >
                     <ArrowLeftRight size={16} className={location.pathname === '/compare' ? 'text-pink-500' : 'text-slate-500'} />
                     {!collapsed && <span className="text-xs font-medium">Compare</span>}
+                </button>
+
+                <button
+                    onClick={() => navigate('/ingestion')}
+                    className={`
+                        flex items-center gap-2 rounded-lg border-none cursor-pointer transition-all duration-200
+                        ${collapsed ? 'justify-center px-1 py-2' : 'px-2 py-1.5'}
+                        ${location.pathname === '/ingestion'
+                            ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-slate-50'
+                            : 'bg-transparent hover:bg-white/5 text-slate-400'}
+                    `}
+                    style={{
+                        borderLeft: !collapsed && location.pathname === '/ingestion' ? '3px solid #f59e0b' : '3px solid transparent'
+                    }}
+                    title={collapsed ? 'Ingest' : undefined}
+                >
+                    <UploadCloud size={16} className={location.pathname === '/ingestion' ? 'text-amber-500' : 'text-slate-500'} />
+                    {!collapsed && <span className="text-xs font-medium">Ingest</span>}
                 </button>
 
                 <button
