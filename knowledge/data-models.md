@@ -10,28 +10,28 @@ One row per (build_id, sku_id, game_slug).
 | build_id | TEXT | Build identifier (e.g., "NVL-S-CONS-26.03.5.139") |
 | sku_id | TEXT | SKU identifier (e.g., "nvl-sk-28c") |
 | game_slug | TEXT | Game slug (e.g., "cb2077") |
-| avg_fps | DOUBLE | Average FPS |
-| one_pct_low | DOUBLE | 1% low FPS |
-| zero_one_pct_low | DOUBLE | 0.1% low FPS |
-| max_fps | DOUBLE | Maximum FPS |
-| min_fps | DOUBLE | Minimum FPS |
-| avg_frame_time_ms | DOUBLE | Average frame time |
-| p95_frame_time_ms | DOUBLE | 95th percentile frame time |
-| p99_frame_time_ms | DOUBLE | 99th percentile frame time |
-| avg_gpu_active_ms | DOUBLE | Avg GPU active time |
-| avg_cpu_active_ms | DOUBLE | Avg CPU active time |
-| avg_ia_power | DOUBLE | Avg IA power (W) |
-| max_ia_power | DOUBLE | Max IA power (W) |
-| avg_pkg_power | DOUBLE | Avg package power (W) |
-| max_pkg_power | DOUBLE | Max package power (W) |
-| avg_pkg_temp | DOUBLE | Avg package temp (C) |
-| max_pkg_temp | DOUBLE | Max package temp (C) |
-| avg_p_core_mhz | DOUBLE | Avg P-core frequency |
-| max_p_core_mhz | DOUBLE | Max P-core frequency |
-| min_p_core_mhz | DOUBLE | Min P-core frequency |
-| avg_e_core_mhz | DOUBLE | Avg E-core frequency |
-| max_e_core_mhz | DOUBLE | Max E-core frequency |
-| min_e_core_mhz | DOUBLE | Min E-core frequency |
+| avg_fps | FLOAT | Average FPS |
+| one_pct_low | FLOAT | 1% low FPS |
+| zero_one_pct_low | FLOAT | 0.1% low FPS |
+| max_fps | FLOAT | Maximum FPS |
+| min_fps | FLOAT | Minimum FPS |
+| avg_frame_time_ms | FLOAT | Average frame time |
+| p95_frame_time_ms | FLOAT | 95th percentile frame time |
+| p99_frame_time_ms | FLOAT | 99th percentile frame time |
+| avg_gpu_active_ms | FLOAT | Avg GPU active time |
+| avg_cpu_active_ms | FLOAT | Avg CPU active time |
+| avg_ia_power | FLOAT | Avg IA power (W) |
+| max_ia_power | FLOAT | Max IA power (W) |
+| avg_pkg_power | FLOAT | Avg package power (W) |
+| max_pkg_power | FLOAT | Max package power (W) |
+| avg_pkg_temp | FLOAT | Avg package temp (C) |
+| max_pkg_temp | FLOAT | Max package temp (C) |
+| avg_p_core_mhz | FLOAT | Avg P-core frequency |
+| max_p_core_mhz | FLOAT | Max P-core frequency |
+| min_p_core_mhz | FLOAT | Min P-core frequency |
+| avg_e_core_mhz | FLOAT | Avg E-core frequency |
+| max_e_core_mhz | FLOAT | Max E-core frequency |
+| min_e_core_mhz | FLOAT | Min E-core frequency |
 | p_core_count | INTEGER | Number of P-cores |
 | e_core_count | INTEGER | Number of E-cores |
 | throttling | TEXT | JSON array of strings |
@@ -40,6 +40,9 @@ One row per (build_id, sku_id, game_slug).
 | gpu | TEXT | GPU model |
 | os | TEXT | OS name |
 | motherboard | TEXT | Motherboard model |
+| build_type | TEXT | "bkc" (default) or "experiment" |
+| parent_bkc | TEXT | NULL for BKC, parent build_id for experiments |
+| experiment_label | TEXT | Optional human-readable label (e.g. "bLLC Enabled") |
 | created_at | TIMESTAMP | Auto-generated |
 
 ### timeseries
@@ -91,6 +94,39 @@ One row per (build_id, sku_id).
 | quick_specs | TEXT (JSON) | [{category, label, value}, ...] |
 | sections | TEXT (JSON) | [{module, plugin, groups: [{name, items}]}] |
 
+## API Response Shapes
+
+### GET /api/build-tree
+```json
+[
+  {
+    "build_id": "NVL-S-CONS-26.03.5.139",
+    "type": "bkc",
+    "game_count": 12,
+    "experiments": [
+      {
+        "build_id": "NVL-S-EXP-BIOS-v2",
+        "game_count": 6,
+        "label": "bLLC Enabled"
+      }
+    ]
+  }
+]
+```
+
+### GET /api/programs
+```json
+[
+  {
+    "id": "nova-lake", "name": "Nova Lake", "codename": "NVL",
+    "icon": "emoji", "color": "#22d3ee",
+    "skus": [
+      { "id": "nvl-sk-28c", "name": "NVL S K 28C", "hasData": true, ... }
+    ]
+  }
+]
+```
+
 ## Hook Return Types
 
 ### useGameData(skuId, buildId)
@@ -110,8 +146,28 @@ One row per (build_id, sku_id).
   } | null,
   loading: boolean,
   error: Error | null,
-  availableSlugs: string[]
+  availableSlugs: Set<string>
 }
+```
+
+### useBuildTree(skuId)
+```js
+{
+  tree: [
+    {
+      build_id: string,
+      type: "bkc",
+      game_count: number,
+      experiments: [{ build_id: string, game_count: number, label?: string }]
+    }
+  ],
+  loading: boolean
+}
+```
+
+### useAvailableBuilds(skuId)
+```js
+string[]  // Array of build IDs, e.g. ["NVL-S-CONS-26.03.5.139"]
 ```
 
 ### useTimeseries(slug, skuId, buildId, chartTypes, maxPoints)

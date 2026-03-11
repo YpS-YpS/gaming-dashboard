@@ -7,31 +7,124 @@ const TYPE_COLORS = {
   'custom': 'bg-amber-500',
 };
 
+const TRACE_KEY_TO_BADGE = {
+  ptat: 'PTAT',
+  presentmon: 'PM',
+  capframex: 'CFX',
+  emon: 'EMON',
+  socwatch: 'SW',
+};
+
+function formatTimeAgo(isoString) {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMin = Math.floor(diffMs / 60000);
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    return `${diffDay}d ago`;
+}
+
+/** Normalize backend run shape to the shape frontend components expect. */
+function normalizeRuns(rawRuns) {
+  if (!Array.isArray(rawRuns)) return [];
+  return rawRuns.map(r => {
+    const games = (r.games || []).map(g => {
+      const traceBadges = Array.isArray(g.traces)
+        ? g.traces
+        : Object.entries(g.traces || {})
+            .filter(([, v]) => v)
+            .map(([k]) => TRACE_KEY_TO_BADGE[k] || k.toUpperCase());
+      return {
+        ...g,
+        name: g.name || g.game_name,
+        slug: g.slug || g.game_slug,
+        traces: traceBadges,
+        // In-game benchmark score (median across runs)
+        fps: g.fps ?? g.scores?.avg_fps ?? null,
+        fps_runs: g.scores?.avg_fps_runs ?? null,
+        fps_all: g.fps_all ?? g.scores?.avg_fps_all ?? null,
+        // PresentMon stats
+        pm_avg: g.pm_stats?.avg_fps ?? null,
+        pm_p1: g.pm_stats?.p1_low ?? null,
+        pm_p01: g.pm_stats?.p01_low ?? null,
+        pm_frames: g.pm_stats?.frame_count ?? null,
+      };
+    });
+
+    // Aggregate run-level trace badges from all games
+    const runTraces = new Set();
+    games.forEach(g => (g.traces || []).forEach(t => runTraces.add(t)));
+
+    return {
+      ...r,
+      folder: r.folder || r.folder_name,
+      name: r.name || r.folder_name,
+      path: r.path || r.folder_path,
+      date: r.date || (r.created_at ? r.created_at.slice(0, 10) : '—'),
+      type: r.type || r.run_type || 'bkc',
+      runTraces: [...runTraces],
+      games,
+    };
+  });
+}
+
 export default function SourceManager({ onScanComplete, onScanning }) {
   const [sources, setSources] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [form, setForm] = useState({ label: '', path: '', type: 'raptor-x' });
+  const [lastScanned, setLastScanned] = useState(null);
+  const [scanStats, setScanStats] = useState(null);  // {new_runs, updated_runs} — shown briefly after scan
 
   useEffect(() => {
     fetch('/api/ingestion/sources')
-      .then(r => r.json())
-      .then(data => setSources(Array.isArray(data) ? data : data.sources || []))
+      .then(r => r.ok ? r.json() : [])
+      .then(data => {
+        const list = Array.isArray(data) ? data : data.sources || [];
+        // Normalize: backend returns source_type, pills use type
+        setSources(list.map(s => ({ ...s, type: s.type || s.source_type })));
+      })
       .catch(() => {});
   }, []);
 
+  // Auto-load cached runs on mount
+  useEffect(() => {
+    fetch('/api/ingestion/runs')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && Array.isArray(data.runs)) {
+          onScanComplete?.(normalizeRuns(data.runs));
+          setLastScanned(data.last_scanned || null);
+        }
+      })
+      .catch(() => {});
+  }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleAdd = () => {
     if (!form.label.trim() || !form.path.trim()) return;
-    const newSource = { ...form, id: Date.now().toString() };
-    setSources(prev => [...prev, newSource]);
-    setForm({ label: '', path: '', type: 'raptor-x' });
-    setShowForm(false);
+    const payload = { label: form.label, path: form.path, source_type: form.type };
 
     fetch('/api/ingestion/sources', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newSource),
-    }).catch(() => {});
+      body: JSON.stringify(payload),
+    })
+      .then(r => r.json())
+      .then(saved => {
+        setSources(prev => [...prev, { id: saved.id, label: saved.label, path: saved.path, type: saved.source_type }]);
+      })
+      .catch(() => {
+        // Optimistic fallback
+        setSources(prev => [...prev, { ...form, id: Date.now().toString() }]);
+      });
+
+    setForm({ label: '', path: '', type: 'raptor-x' });
+    setShowForm(false);
   };
 
   const handleRemove = (id) => {
@@ -43,10 +136,27 @@ export default function SourceManager({ onScanComplete, onScanning }) {
     setScanning(true);
     onScanning?.(true);
     try {
-      const res = await fetch('/api/ingestion/scan', { method: 'POST' });
+      const res = await fetch('/api/ingestion/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force: true }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('Scan failed:', res.status, err.detail || err);
+        onScanComplete?.([]);
+        return;
+      }
       const data = await res.json();
-      onScanComplete?.(data.runs || data || []);
-    } catch {
+      const raw = Array.isArray(data.runs) ? data.runs : Array.isArray(data) ? data : [];
+      onScanComplete?.(normalizeRuns(raw));
+      setLastScanned(data.last_scanned || new Date().toISOString());
+      if (data.new_runs > 0 || data.updated_runs > 0) {
+        setScanStats({ new_runs: data.new_runs || 0, updated_runs: data.updated_runs || 0 });
+        setTimeout(() => setScanStats(null), 5000);  // auto-clear after 5s
+      }
+    } catch (e) {
+      console.error('Scan error:', e);
       onScanComplete?.([]);
     } finally {
       setScanning(false);
@@ -137,6 +247,20 @@ export default function SourceManager({ onScanComplete, onScanning }) {
         {scanning ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
         {scanning ? 'Scanning...' : 'Scan All'}
       </button>
+
+      {/* Last scanned indicator */}
+      {lastScanned && (
+        <span className="text-[10px] text-slate-600 flex-shrink-0" title={lastScanned}>
+          {formatTimeAgo(lastScanned)}
+        </span>
+      )}
+
+      {/* Scan stats flash */}
+      {scanStats && (
+        <span className="text-[10px] text-emerald-400 flex-shrink-0 animate-pulse">
+          +{scanStats.new_runs} new{scanStats.updated_runs > 0 ? `, ${scanStats.updated_runs} updated` : ''}
+        </span>
+      )}
     </div>
   );
 }

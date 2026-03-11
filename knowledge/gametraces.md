@@ -96,12 +96,11 @@ Gametraces/
 
 ## Current Data State (March 2026)
 
-- **Only Nova Lake NVL S K 28C has real data**
-- 1 build folder: WW08 Baseline OOB
+- **Only Nova Lake NVL S K 28C has real data in the Gametraces folder**
+- 1 build folder: WW08 Baseline OOB (build_id: NVL-S-CONS-26.03.5.139)
 - 12 games with complete PTAT + CapFrameX traces
-- Total raw data: ~63.5 MB per build
-- DuckDB: 113 MB (includes WW08 BKC build ingested separately)
-- All other programs/SKUs: registered in program.json but no build data
+- DB also supports ingesting automation data from Raptor-X logs (separate path)
+- All other programs/SKUs: registered in program.json but no build data yet
 
 ## Games with Data
 
@@ -119,10 +118,21 @@ Gametraces/
 12. Tiny Tina's Wonderlands
 
 ## Build Folder Convention
+
+**Manual builds** (in Gametraces):
 ```
 Gametraces/<Program>/<SKU>/<Build Name>/
   PTAT_logs/*.csv
-  Presentmon_logs/*.json
+  Presentmon_logs/*.json    (CapFrameX) or *.csv (PresentMon)
   *SystemScope*.json
 ```
 Build names typically follow: `WW<week> <description>` (e.g., "WW08 BKC", "WW08 Baseline OOB")
+
+**Automation builds** (in Raptor-X logs, ingested via wizard):
+```
+C:\Users\Local_Admin\Documents\Raptor-X\rpx-core\logs\runs\<run-folder>/
+  traces/ptat/*.csv
+  traces/presentmon/*.csv
+  manifest.json
+```
+See [automation-runs.md](automation-runs.md) for full structure.

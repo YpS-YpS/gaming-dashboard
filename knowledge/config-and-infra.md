@@ -83,6 +83,7 @@ numpy==2.1.3
 - dist/, out/, .next/
 - *.duckdb (database files)
 - WW*/ (raw build data folders)
+- ingestion_log.json (automation ingestion tracking)
 - .claude/
 
 ## Other Root Files

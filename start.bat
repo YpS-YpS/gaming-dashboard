@@ -25,6 +25,7 @@ echo.
 echo   Local:    http://localhost:5173
 echo   Network:  http://%LOCAL_IP%:5173
 echo   Backend:  http://localhost:9001
+echo   Ingest:   python -m backend.etl.ingest_gui
 echo.
 echo   Share the Network URL with other machines
 echo ============================================

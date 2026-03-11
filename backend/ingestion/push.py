@@ -130,6 +130,12 @@ def parse_preview(games: list[dict]) -> list[dict]:
             except Exception as e:
                 errors.append(f"{parser.name}: {str(e)}")
 
+        # Apply manual FPS override if provided
+        manual_fps = game.get("manual_fps")
+        if manual_fps is not None:
+            summary["avg_fps"] = manual_fps
+            summary["_manual_fps"] = True
+
         # Validation checks
         if not summary.get("avg_fps") and not summary.get("avg_ia_power"):
             warnings.append("No FPS or power data extracted")
@@ -181,6 +187,7 @@ def push_games(
     experiment_label: str | None,
     games: list[dict],
     on_progress=None,
+    notes: str | None = None,
 ) -> dict:
     """
     Parse and write games to the database.
@@ -231,6 +238,7 @@ def push_games(
                 "build_type": build_type,
                 "parent_bkc": parent_bkc,
                 "experiment_label": experiment_label,
+                "notes": notes,
             }
 
             if on_progress:
@@ -262,6 +270,11 @@ def push_games(
                     if data:
                         db.upsert_timeseries(con, build_id, sku_id, slug, chart_type, data)
                         all_chart_types.add(chart_type)
+
+            # Override avg_fps with manual value if provided
+            manual_fps = game.get("manual_fps")
+            if manual_fps is not None:
+                merged_summary["avg_fps"] = manual_fps
 
             if on_progress:
                 on_progress(slug, "writing_summary", (i + 0.7) / len(games))
@@ -301,6 +314,7 @@ def push_games(
         "source_paths": json.dumps(list(source_paths)),
         "chart_types": json.dumps(sorted(all_chart_types)),
         "status": "completed" if not game_errors else "partial",
+        "notes": notes,
     }
     db.insert_ingestion_log(con, log_entry)
 

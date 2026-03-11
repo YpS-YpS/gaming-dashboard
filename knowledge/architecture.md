@@ -10,33 +10,48 @@
 ```
 Raw Files (per build folder)
   PTAT_logs/*.csv          - CPU telemetry (freq, temp, power, clip, cstate)
-  Presentmon_logs/*.json   - Frame times + FPS (CapFrameX)
+  Presentmon_logs/*.json   - Frame times + FPS (CapFrameX JSON — manual data)
+  Presentmon_logs/*.csv    - Frame times + FPS (PresentMon CSV — automation data)
   *SystemScope*.json       - System config tree
        |
        v
-  ETL: python -m backend.etl.process_build --input <folder> --sku <id>
+  ETL Options:
+    Manual:     python -m backend.etl.process_build --input <folder> --sku <id>
+    Automation: python -m backend.etl.ingest_gui  (tkinter GUI — preferred)
+    Automation: python -m backend.etl.ingest_run  (CLI wizard — headless/scripted)
        |
        v
   DuckDB (backend/data/gaming_dashboard.duckdb)
-    - game_summary     : 1 row per (build, sku, game) with KPI metrics
+    - game_summary     : 1 row per (build, sku, game) with KPI metrics + build_type/parent_bkc
     - timeseries       : 1 row per (build, sku, game, chart_type) with JSON arrays
     - system_scope     : 1 row per (build, sku) with config tree
        |
        v
-  FastAPI (port 9001) - 12 endpoints, LTTB downsampling, 5-min TTL cache
+  FastAPI (port 9001) - 15 endpoints, LTTB downsampling, 5-min TTL cache, DB release/reacquire for ETL
        |
        v
   React Frontend (port 5173 dev / 8000 prod)
-    - ProgramsContext   -> /api/programs
-    - useGameData       -> /api/summary
-    - useTimeseries     -> /api/timeseries/{slug}
+    - ProgramsContext    -> /api/programs
+    - useGameData        -> /api/summary
+    - useTimeseries      -> /api/timeseries/{slug}
     - usePerformanceIndex -> /api/performance-index
-    - useSystemConfig   -> /api/system-config
-    - useSystemScope    -> /api/system-scope-details
+    - useSystemConfig    -> /api/system-config
+    - useSystemScope     -> /api/system-scope-details
+    - useBuildTree       -> /api/build-tree
+    - useAvailableBuilds -> /api/builds
        |
        v
   Pages: LandingPage -> ProgramDashboard -> GameCard -> GameOverlay -> DetailedAnalysisPage
 ```
+
+## Build Hierarchy (BKC + Experiments)
+
+Builds follow a git-like model:
+- **BKC (Best Known Configuration)** = "main branch" — primary validated build
+- **Experiments** = "feature branches" — BIOS/IFWI/config variations branching off a BKC
+- Stored in `game_summary.build_type` ("bkc" | "experiment"), `game_summary.parent_bkc` (NULL for BKC, parent build_id for experiments), and `game_summary.experiment_label` (optional human-readable name)
+- Exposed via `/api/build-tree` endpoint and rendered as a git-graph-style tree in the sidebar (continuous vertical rail + horizontal branch connectors)
+- Experiment labels shown in sidebar tree (amber text) and experiment banner on ProgramDashboard
 
 ## Key Design Decisions
 
@@ -49,6 +64,8 @@ Raw Files (per build folder)
 7. **Thread-safe DuckDB** - single parent connection + per-request cursors
 8. **Dynamic programs/SKUs** - from `Gametraces/<Program>/program.json`, with static fallback
 9. **Read-only DB on backend** - `read_only=True` for safety
+10. **Dual FPS parsers** - CapFrameX JSON (manual data) + PresentMon CSV (automation data), same output shape
+11. **Automation data stays in-place** - ingestion wizard reads from Raptor-X logs path, no file copying
 
 ## Directory Structure
 
@@ -56,6 +73,7 @@ Raw Files (per build folder)
 gaming-dashboard/
   CLAUDE.md                 - Project instructions (checked in)
   knowledge/                - This documentation
+  docs/plans/               - Implementation plans
   start.bat / stop.bat      - Dev server scripts
   package.json              - Frontend deps
   vite.config.js            - Vite config (proxy to :9001)
@@ -63,10 +81,10 @@ gaming-dashboard/
   index.html                - SPA entry point
   src/                      - React frontend
     main.jsx                - Root mount (BrowserRouter)
-    App.jsx                 - Layout + routes + splash + demo
+    App.jsx                 - Horizontal layout (sidebar + main), routes, splash, demo
     index.css               - Global styles + keyframes
     context/                - ProgramsContext
-    hooks/                  - 5 custom hooks (data fetching)
+    hooks/                  - 7 custom hooks (data fetching + build tree)
     data/                   - Static manifests (programs, games)
     utils/                  - Color mappings
     components/
@@ -77,15 +95,18 @@ gaming-dashboard/
       demo/                 - DemoMode + DemoGameCardView
       overlay/              - GameOverlay
       system/               - SystemScopePanel
-      layout/               - Sidebar
+      layout/               - Sidebar (collapsible left nav) + BuildTree (git-branch tree)
       common/               - GameImage, DeltaBadge
   backend/
     main.py                 - FastAPI app (routes, cache, static serving)
-    db.py                   - DuckDB schema + helpers
+    db.py                   - DuckDB schema + helpers (build_type, parent_bkc columns)
     requirements.txt        - Python deps
     data/                   - DuckDB file (gitignored)
-    parsers/                - PTAT, CapFrameX, SystemScope, game_map, sku_map
-    etl/                    - process_build.py (CLI entry point)
+    parsers/                - PTAT, CapFrameX, PresentMon CSV, SystemScope, game_map, sku_map
+    etl/
+      process_build.py      - CLI entry point (manual builds)
+      ingest_run.py         - CLI ingestion wizard (automation builds)
+      ingest_gui.py         - Tkinter GUI ingestion wizard (preferred)
   Gametraces/               - Program manifests + raw build data
     <Program>/
       program.json          - Program + SKU definitions

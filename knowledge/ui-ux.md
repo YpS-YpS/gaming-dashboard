@@ -8,6 +8,11 @@
 - **Font**: Space Grotesk (Google Fonts, weights 300-700)
 - **Style**: Dark cyberpunk / deep-space aesthetic
 
+## Layout
+- **Horizontal flex**: collapsible left sidebar (260px / 48px) + scrollable main content
+- Sidebar has smooth 300ms cubic-bezier transition on width change
+- Main content uses `overflow-y-auto overflow-x-hidden`
+
 ## FPS Color Coding
 | Threshold | Color | Hex |
 |-----------|-------|-----|
@@ -33,6 +38,35 @@
 | Panther Lake | #f472b6 |
 | Raptor Lake | #f97316 / #fb923c |
 | Raptor Lake Refresh | #fdba74 |
+
+## Sidebar Design
+- **Expanded** (260px): Full labels, section headers, build tree, stats
+- **Collapsed** (48px): Icons only, tooltips on hover
+- **Sections** (top to bottom):
+  1. Toggle button (ChevronLeft/Right)
+  2. Logo ("Intel SIV Gaming / Performance Lab") with `logoSequence` animation
+  3. Programs list (emoji + name, colored left border when active)
+  4. SKUs (shown when a program is selected, derived from URL)
+  5. Build Tree (shown when a SKU is selected, git-branch style)
+  6. Tools (Compare, Demo)
+  7. Stats footer (game count, build count)
+
+## Build Tree UI
+- **Git-graph layout** (absolute positioned, 32px fixed gutter):
+  - Continuous vertical rail at x=12px (`programColor` at 35% opacity)
+  - **BKC nodes**: 10px circle on rail, program color, filled+glow when selected
+  - **Experiment branches**: horizontal connector from rail to 8px amber dot at x=24px
+  - `FlaskConical` icon + label (amber) or truncated build_id
+- Active build: `bg-white/10` highlight + colored left border (program color for BKC, amber for experiments)
+- Non-active: slate-400/500 text, hover brightens
+- **Experiment labels**: when `label` field present, shown as primary amber text with build_id as small subtitle
+
+## Experiment Banner
+- Shown on ProgramDashboard when the current build is an experiment
+- Amber themed: `bg-amber-500/10 border border-amber-500/20`
+- Shows: FlaskConical icon + **label** (bold, if set) + experiment build_id + "branched from" + parent BKC name
+- Placed between SKU selector and game results
+- Build switch re-triggers `fadeSlideIn` stagger animation on game cards (key includes `selectedBuild`)
 
 ## CSS Keyframe Animations (src/index.css)
 
@@ -67,8 +101,8 @@
 - Simple opacity 0->1
 
 ### logoSequence (Sidebar)
-- 43s cycle with 8 pulses + electrify burst
-- Applied to Intel SIV logo
+- 43s cycle with 8 pulses + electrify burst at end
+- Applied to Intel SIV logo icon
 
 ## Animation Patterns
 
@@ -91,6 +125,10 @@
 - Content: `slideInRight`
 - Backdrop: semi-transparent black + blur
 
+### Sidebar Collapse
+- Width transition: 300ms cubic-bezier(0.4, 0, 0.2, 1)
+- Content fades/hides based on `collapsed` prop
+
 ## Design Rules
 - All time-based X-axes auto-scale from data (5s/10s tick intervals)
 - All Y-axes auto-scale from data (no hardcoded domains)
@@ -105,3 +143,4 @@
 - Selected: colored border + gradient background
 - Badges: small rounded pills with semi-transparent backgrounds
 - Icons: Lucide React library
+- Sidebar nav buttons: `bg-transparent hover:bg-white/5`, active: `bg-white/10`

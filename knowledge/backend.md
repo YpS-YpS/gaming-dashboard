@@ -5,13 +5,22 @@
 ```
 backend/
   __init__.py
-  main.py            - FastAPI app (12 routes, caching, static serving)
+  main.py            - FastAPI app (13 routes, caching, static serving)
   db.py              - DuckDB schema + connection + upsert helpers
   requirements.txt   - fastapi, uvicorn, duckdb, polars, pydantic, numpy
   data/
-    gaming_dashboard.duckdb   - 113 MB database (gitignored)
+    gaming_dashboard.duckdb   - Database (gitignored)
   parsers/           - See parsers-etl.md
-  etl/               - See parsers-etl.md
+    ptat.py          - PTAT CSV parser (CPU telemetry)
+    capframex.py     - CapFrameX JSON parser (manual FPS data)
+    presentmon_csv.py - PresentMon CSV parser (automation FPS data)
+    system_scope.py  - System Scope JSON parser
+    game_map.py      - Game name -> slug mapping (3 tables + automation prefixes)
+    sku_map.py       - CPU name -> SKU mapping + dashboard SKU resolution
+  etl/
+    process_build.py  - CLI entry point (manual builds)
+    ingest_run.py     - CLI ingestion wizard (automation builds)
+    ingest_gui.py     - Tkinter GUI ingestion wizard (preferred, 2 tabs: Ingest + Manage Builds)
 ```
 
 ## main.py - FastAPI Application
@@ -55,6 +64,7 @@ def _invalidate_cache():  # Clear all (call after ETL)
 | `/health` | GET | - | No | Health check + DB file status |
 | `/api/programs` | GET | - | 5m | Program/SKU manifest + hasData flags |
 | `/api/builds` | GET | `sku_id?` | 5m | Available build IDs (DESC) |
+| `/api/build-tree` | GET | `sku_id?` | 5m | BKC builds with nested experiment branches |
 | `/api/summary` | GET | `build_id, sku_id` | 5m | All game KPIs for build+SKU |
 | `/api/timeseries/{slug}` | GET | `build_id, sku_id, charts?, max_points=1000` | No | Chart data (LTTB downsampled) |
 | `/api/system-config` | GET | `build_id, sku_id` | No | CPU/GPU/OS/firmware/motherboard |
@@ -63,6 +73,8 @@ def _invalidate_cache():  # Clear all (call after ETL)
 | `/api/compare` | GET | `left_build, left_sku, right_build, right_sku, game_slug, charts?` | No | Side-by-side comparison |
 | `/api/games/available` | GET | `build_id?, sku_id?` | No | Game slugs with data |
 | `/api/cache/clear` | POST | - | N/A | Invalidate TTL cache |
+| `/api/db/release` | POST | - | N/A | Close DB connection (for ETL writes) |
+| `/api/db/reacquire` | POST | - | N/A | Reopen DB connection + clear cache |
 | `/{path}` | GET | - | No | SPA static files + index.html fallback |
 
 ### Key Endpoint Details
@@ -70,6 +82,12 @@ def _invalidate_cache():  # Clear all (call after ETL)
 **GET /api/programs**
 - Returns programs from JSON manifests
 - Annotates each SKU with `hasData: bool` (queries game_summary for distinct sku_ids)
+
+**GET /api/build-tree**
+- Queries `game_summary` for BKC builds (build_type='bkc' or NULL) and experiments
+- Returns: `[{ build_id, type, game_count, experiments: [{ build_id, game_count, label? }] }]`
+- Experiments nested under their parent BKC via `parent_bkc` column
+- `label` field included when `experiment_label` is set in DB (human-readable name like "bLLC Enabled")
 
 **GET /api/summary**
 - Returns all game rows for build+SKU
@@ -94,7 +112,7 @@ def _invalidate_cache():  # Clear all (call after ETL)
 ### Functions
 - `get_connection(db_path, read_only)` - Create/return DuckDB connection
 - `init_schema(db_path)` - Create tables if not exist
-- `upsert_summary(con, row)` - INSERT OR REPLACE game summary
+- `upsert_summary(con, row)` - INSERT OR REPLACE game summary (includes build_type, parent_bkc)
 - `upsert_timeseries(con, build_id, sku_id, game_slug, chart_type, data)` - INSERT OR REPLACE timeseries (data as JSON string)
 - `upsert_system_scope(con, build_id, sku_id, scope_data)` - INSERT OR REPLACE scope
 
@@ -103,16 +121,19 @@ def _invalidate_cache():  # Clear all (call after ETL)
 **game_summary** (PK: build_id, sku_id, game_slug)
 ```
 build_id, sku_id, game_slug          TEXT
-avg_fps, one_pct_low, zero_one_pct_low, max_fps, min_fps   DOUBLE
-avg_frame_time_ms, p95_frame_time_ms, p99_frame_time_ms     DOUBLE
-avg_gpu_active_ms, avg_cpu_active_ms                        DOUBLE
-avg_ia_power, max_ia_power, avg_pkg_power, max_pkg_power    DOUBLE
-avg_pkg_temp, max_pkg_temp                                  DOUBLE
-avg_p_core_mhz, max_p_core_mhz, min_p_core_mhz           DOUBLE
-avg_e_core_mhz, max_e_core_mhz, min_e_core_mhz           DOUBLE
+avg_fps, one_pct_low, zero_one_pct_low, max_fps, min_fps   FLOAT
+avg_frame_time_ms, p95_frame_time_ms, p99_frame_time_ms     FLOAT
+avg_gpu_active_ms, avg_cpu_active_ms                        FLOAT
+avg_ia_power, max_ia_power, avg_pkg_power, max_pkg_power    FLOAT
+avg_pkg_temp, max_pkg_temp                                  FLOAT
+avg_p_core_mhz, max_p_core_mhz, min_p_core_mhz           FLOAT
+avg_e_core_mhz, max_e_core_mhz, min_e_core_mhz           FLOAT
 p_core_count, e_core_count                                  INTEGER
 throttling                                                  TEXT (JSON array)
 cpu_brand, firmware, gpu, os, motherboard                   TEXT
+build_type                                                  TEXT DEFAULT 'bkc'  -- 'bkc' or 'experiment'
+parent_bkc                                                  TEXT                -- NULL for BKC, parent build_id for experiments
+experiment_label                                            TEXT                -- Optional human-readable label (e.g. "bLLC Enabled")
 created_at                                                  TIMESTAMP (auto)
 ```
 

@@ -12,7 +12,9 @@ import csv
 import hashlib
 import json
 import logging
+import math
 import os
+import statistics
 from datetime import datetime
 from pathlib import Path
 
@@ -399,8 +401,11 @@ def _build_game_record(entry_name: str, game_path: str, manifest: dict) -> dict:
     # Detect traces
     traces = _detect_traces(game_path)
 
-    # Read scores from perf-run-*/results/scores.json (use last iteration)
-    scores, has_scores = _read_last_scores(game_path)
+    # Read scores from ALL perf-run-*/results/scores.json and compute median
+    scores, has_scores = _read_all_scores(game_path)
+
+    # Quick PresentMon stats from trace CSVs
+    pm_stats = _read_presentmon_stats(game_path) if traces.get("presentmon") else None
 
     # Try to detect game slug from PTAT filenames
     game_slug = _detect_game_slug(game_path, game_name)
@@ -413,6 +418,7 @@ def _build_game_record(entry_name: str, game_path: str, manifest: dict) -> dict:
         "iterations": num_iterations,
         "has_scores": has_scores,
         "scores": scores,
+        "pm_stats": pm_stats,
         "traces": traces,
     }
 
@@ -454,13 +460,12 @@ def _detect_traces(game_path: str) -> dict:
     return traces
 
 
-def _read_last_scores(game_path: str) -> tuple[dict | None, bool]:
+def _read_all_scores(game_path: str) -> tuple[dict | None, bool]:
     """
-    Read scores from the last perf-run iteration that has scores.json.
+    Read scores from ALL perf-run iterations and compute median avg_fps.
 
-    Returns (scores_dict | None, has_scores: bool).
+    Returns (scores_dict_with_median | None, has_scores: bool).
     """
-    # Find all perf-run-N directories
     perf_runs = []
     for entry in os.listdir(game_path):
         if entry.startswith("perf-run-") and os.path.isdir(os.path.join(game_path, entry)):
@@ -473,35 +478,150 @@ def _read_last_scores(game_path: str) -> tuple[dict | None, bool]:
     if not perf_runs:
         return None, False
 
-    # Sort by iteration number descending, use last one with scores
-    perf_runs.sort(key=lambda x: x[0], reverse=True)
+    perf_runs.sort(key=lambda x: x[0])
+
+    all_avg_fps = []
+    all_min_fps = []
+    all_max_fps = []
+    last_scores = None
 
     for _num, run_dir in perf_runs:
         scores_path = os.path.join(game_path, run_dir, "results", "scores.json")
         data = _safe_read_json(scores_path)
-        if data and "scores" in data:
-            return data["scores"], True
-        elif data:
-            # scores.json exists but may have a different structure
-            return data, True
+        if not data:
+            continue
+        scores = data.get("scores", data)
+        last_scores = scores
+        if scores.get("avg_fps") is not None:
+            all_avg_fps.append(scores["avg_fps"])
+        if scores.get("min_fps") is not None:
+            all_min_fps.append(scores["min_fps"])
+        if scores.get("max_fps") is not None:
+            all_max_fps.append(scores["max_fps"])
 
-    return None, False
+    if not last_scores:
+        return None, False
+
+    result = dict(last_scores)
+    # Override with median across all runs
+    if all_avg_fps:
+        result["avg_fps"] = round(statistics.median(all_avg_fps), 2)
+        result["avg_fps_runs"] = len(all_avg_fps)
+        result["avg_fps_all"] = [round(v, 2) for v in all_avg_fps]
+    if all_min_fps:
+        result["min_fps"] = round(statistics.median(all_min_fps), 2)
+    if all_max_fps:
+        result["max_fps"] = round(statistics.median(all_max_fps), 2)
+
+    return result, True
+
+
+def _read_presentmon_stats(game_path: str) -> dict | None:
+    """
+    Quick-parse PresentMon CSVs to extract avg FPS, 1% low, 0.1% low.
+
+    Reads MsBetweenPresents column, converts to FPS.
+    """
+    pm_csvs = []
+
+    # Check traces/presentmon/
+    pm_dir = os.path.join(game_path, "traces", "presentmon")
+    if os.path.isdir(pm_dir):
+        for f in os.listdir(pm_dir):
+            if f.lower().endswith(".csv"):
+                pm_csvs.append(os.path.join(pm_dir, f))
+
+    # Check trace-run-presentmon/
+    tr_dir = os.path.join(game_path, "trace-run-presentmon")
+    if os.path.isdir(tr_dir):
+        for f in os.listdir(tr_dir):
+            if f.lower().endswith(".csv"):
+                pm_csvs.append(os.path.join(tr_dir, f))
+        # Also check results/ subfolder
+        res_dir = os.path.join(tr_dir, "results")
+        if os.path.isdir(res_dir):
+            for f in os.listdir(res_dir):
+                if f.lower().endswith(".csv"):
+                    pm_csvs.append(os.path.join(res_dir, f))
+
+    if not pm_csvs:
+        return None
+
+    # Use the last (most recent) CSV
+    pm_csvs.sort()
+    csv_path = pm_csvs[-1]
+
+    try:
+        frame_times = []
+        with open(csv_path, "r", encoding="utf-8", errors="replace") as f:
+            reader = csv.DictReader(f)
+            col = None
+            for candidate in ("MsBetweenPresents", "msBetweenPresents"):
+                if candidate in (reader.fieldnames or []):
+                    col = candidate
+                    break
+            if not col:
+                return None
+            for row in reader:
+                try:
+                    ms = float(row[col])
+                    if 0.1 < ms < 500:  # filter outliers
+                        frame_times.append(ms)
+                except (ValueError, KeyError):
+                    continue
+
+        if len(frame_times) < 10:
+            return None
+
+        frame_times.sort()
+        n = len(frame_times)
+
+        avg_ms = statistics.mean(frame_times)
+        # 1% low = average of worst 1% frame times
+        p1_count = max(1, n // 100)
+        p1_ms = statistics.mean(frame_times[-p1_count:])
+        # 0.1% low = average of worst 0.1% frame times
+        p01_count = max(1, n // 1000)
+        p01_ms = statistics.mean(frame_times[-p01_count:])
+
+        return {
+            "avg_fps": round(1000.0 / avg_ms, 2),
+            "p1_low": round(1000.0 / p1_ms, 2),
+            "p01_low": round(1000.0 / p01_ms, 2),
+            "frame_count": n,
+        }
+    except Exception:
+        logger.exception("Error reading PresentMon CSV: %s", csv_path)
+        return None
 
 
 def _detect_game_slug(game_path: str, game_name: str) -> str | None:
     """
-    Try to detect game slug from PTAT filenames in the traces directory.
+    Try to detect game slug from PTAT filenames or game name.
 
-    Falls back to None if no match is found.
+    Checks multiple locations for PTAT CSVs, then falls back to
+    matching the game name against the known game name map.
     """
-    # Check traces/ptat/ directory for PTAT CSV filenames
-    ptat_dir = os.path.join(game_path, "traces", "ptat")
-    if os.path.isdir(ptat_dir):
-        for fname in os.listdir(ptat_dir):
-            if fname.lower().endswith(".csv"):
-                slug = ptat_filename_to_slug(fname)
-                if slug:
-                    return slug
+    from backend.parsers.game_map import capframex_to_slug
+
+    # Check both trace directory layouts for PTAT CSV filenames
+    ptat_dirs = [
+        os.path.join(game_path, "traces", "ptat"),
+        os.path.join(game_path, "trace-run-ptat"),
+    ]
+    for ptat_dir in ptat_dirs:
+        if os.path.isdir(ptat_dir):
+            for fname in os.listdir(ptat_dir):
+                if fname.lower().endswith(".csv"):
+                    slug = ptat_filename_to_slug(fname)
+                    if slug:
+                        return slug
+
+    # Fallback: match game_name against known game names (e.g., "Cyberpunk 2077" → "cb2077")
+    if game_name:
+        slug = capframex_to_slug(game_name, None)
+        if slug:
+            return slug
 
     return None
 

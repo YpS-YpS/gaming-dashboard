@@ -1,8 +1,9 @@
 # Parsers & ETL Pipeline
 
-## ETL Entry Point: backend/etl/process_build.py
+## ETL Entry Points
 
-### Usage
+### 1. Manual Ingestion: backend/etl/process_build.py
+
 ```bash
 python -m backend.etl.process_build --input "C:/path/to/build_folder" --sku nvl-sk-28c
 # --build optional (auto-extracted from SystemScope JSON)
@@ -10,30 +11,97 @@ python -m backend.etl.process_build --input "C:/path/to/build_folder" --sku nvl-
 # --db optional (default: backend/data/gaming_dashboard.duckdb)
 ```
 
-### Pipeline Steps
-
+**Pipeline Steps**:
 1. **init_schema()** - Create DB tables if needed
 2. **Discover SystemScope** - Find `*SystemScope*.json`, parse it, extract build_id
-3. **Discover files** - `PTAT_logs/*.csv` + `Presentmon_logs/*.json`
-4. **Parse CapFrameX** - Each JSON -> fps_by_slug dict (game slug -> FPS data)
+3. **Discover files** - `PTAT_logs/*.csv` + `Presentmon_logs/*.json` + `Presentmon_logs/*.csv`
+4. **Parse CapFrameX/PresentMon** - Each file -> fps_by_slug dict (game slug -> FPS data)
 5. **Parse PTAT** - Each CSV -> ptat_by_slug dict (game slug -> CPU telemetry)
 6. **Merge by game slug** - Combine FPS + PTAT summaries, extract system info
 7. **Write to DB** - upsert_summary + upsert_timeseries for each game
 8. **Write SystemScope** - upsert_system_scope for build+SKU
 
-### Build Folder Structure
+**Build Folder Structure** (manual):
 ```
 <Build Name>/
   PTAT_logs/
     AssasinCreed_PTATMonitor_*.csv
-    BlackMyth_PTATMonitor_*.csv
     ...
   Presentmon_logs/
-    CapFrameX-ACMirage.exe-*.json
-    CapFrameX-b1-Win64-Shipping.exe-*.json
+    CapFrameX-ACMirage.exe-*.json     (or PresentMon *.csv)
     ...
   MININT-*_SystemScope_*.json
 ```
+
+### 2. Automation Ingestion CLI: backend/etl/ingest_run.py (~776 lines)
+
+```bash
+python -m backend.etl.ingest_run
+```
+
+**CLI wizard** that scans Raptor-X automation logs and ingests them into the dashboard DB.
+Mostly superseded by the GUI (below) but still works for scripted/headless use.
+
+### 3. Automation Ingestion GUI: backend/etl/ingest_gui.py
+
+```bash
+python -m backend.etl.ingest_gui
+```
+
+**Tkinter GUI** for ingestion. Preferred over the CLI wizard.
+
+**Two tabs** (ttk.Notebook):
+
+**Tab 1: Ingest**
+- Scans `C:\Users\Local_Admin\Documents\Raptor-X\rpx-core\logs\runs\` for run folders
+- Expands campaigns into per-game rows — cherry-pick individual games
+- Mix campaigns + single reruns into one build (reruns overwrite bad scores via UPSERT)
+- Auto-detect SKU from PTAT and build ID from BIOS version
+- Filter: All / Uningested / Tagged Official
+- Build config: SKU dropdown, build ID, BKC vs Experiment with parent BKC, **experiment label**
+- Background-threaded ingestion (GUI stays responsive)
+- **Marker files**: drops `dashboard_ingestion.json` into each ingested run folder
+- **Replace tracking**: when a rerun overwrites a game, the old marker gets `replaced_by` updated
+- Tracks ingested runs via `ingestion_log.json`
+- "Clear API Cache" button (hits POST /api/cache/clear)
+- **DB coordination**: calls `POST /api/db/release` before ingestion and `POST /api/db/reacquire` after, so backend doesn't block DuckDB writes
+
+**Tab 2: Manage Builds**
+- Lists all ingested builds from DB (build_id, SKU, type, label, parent BKC, game count, last ingested)
+- Click a build → shows editable fields + game list with FPS/temp/power per game
+- Edit: build_type (BKC ↔ Experiment), parent_bkc, experiment_label
+- Delete: removes all game_summary + timeseries + system_scope rows for build+sku
+- Auto-refreshes when tab is selected
+- Uses silent release/reacquire helpers for DB write operations
+
+**Key Classes**:
+- `IngestionApp` - Main tkinter application (2 tabs, ~850 lines)
+- `GameRow` - One game from a run (holds RunInfo, game name, trace path)
+- `TreeEntry` - Groups a RunInfo with its GameRows; `is_campaign=True` for multi-game campaigns
+- `RunInfo` (from ingest_run.py) - Metadata for a discovered run
+
+**Campaign Grouping (Treeview)**:
+- Campaigns display as collapsible parent nodes (`open=False` by default) with +/- expand
+- Single runs display as flat rows (no parent)
+- `build_tree_entries(runs)` converts RunInfo list → TreeEntry list, expanding campaigns into per-game GameRows
+- `_populate_table()` inserts campaign parents with `show="tree headings"`, nests children under parent iid
+- `campaign_children` dict maps parent iid → list of child iids for bulk checkbox toggle
+- Clicking a campaign parent row toggles all children's check state on/off
+
+**Marker file** (`dashboard_ingestion.json` in each run folder):
+```json
+{
+  "build_id": "...", "sku_id": "...", "build_type": "bkc",
+  "ingested_at": "ISO timestamp",
+  "games_ingested": ["ac-mirage", "wukong"],
+  "replaced_by": null
+}
+```
+
+**Automation folder -> Dashboard mapping**:
+- `traces/ptat/*.csv` -> PTAT parser (identical format to manual)
+- `traces/presentmon/*.csv` -> PresentMon CSV parser (new, replaces CapFrameX JSON)
+- `manifest.json` -> SUT info (gpu_name, cpu_brand, bios_version)
 
 ---
 
@@ -85,7 +153,22 @@ python -m backend.etl.process_build --input "C:/path/to/build_folder" --sku nvl-
    - min_fps = 1000 / max(frame_times)
 5. Build frametimes array (ALL frames): `{frame, frameTime, fps, movingAvg, percentile95, percentile99}`
 
-**Output**:
+**Output**: Same shape as PresentMon CSV parser (below).
+
+### presentmon_csv.py - PresentMon CSV Parser (NEW)
+
+**Input**: PresentMon CSV file (automation frame times)
+**Function**: `parse_presentmon_csv(filepath, manifest=None) -> dict | None`
+
+**Processing**:
+1. Read CSV with `csv.DictReader` (UTF-8-sig encoding)
+2. Filter rows where `FrameType == "Application"` (skip "Presented" rows)
+3. Extract frame times from `MsBetweenPresents`, GPU from `MsGPUBusy`, CPU from `MsCPUBusy`
+4. Map application name to game slug via `capframex_to_slug()`
+5. Calculate same FPS metrics as CapFrameX parser
+6. Build same frametimes array shape
+
+**Output** (matches CapFrameX exactly):
 ```python
 {
   "game_slug": str,
@@ -94,6 +177,8 @@ python -m backend.etl.process_build --input "C:/path/to/build_folder" --sku nvl-
   "frametimes": [{frame, frameTime, fps, movingAvg, percentile95, percentile99}, ...]
 }
 ```
+
+**Key difference from CapFrameX**: `info` fields (gpu, motherboard, os) populated from `manifest` dict parameter instead of JSON metadata.
 
 ### system_scope.py - System Scope JSON Parser
 
@@ -120,10 +205,11 @@ python -m backend.etl.process_build --input "C:/path/to/build_folder" --sku nvl-
 
 ### game_map.py - Game Name Mapping
 
-Three mapping tables:
+Four mapping tables:
 1. **CAPFRAMEX_GAME_NAME_TO_SLUG**: "Cyberpunk 2077" -> "cb2077" (45 games)
 2. **CAPFRAMEX_PROCESS_TO_SLUG**: "Cyberpunk2077.exe" -> "cb2077" (fallback)
-3. **PTAT_FILENAME_PREFIX_TO_SLUG**: "Cyberpunk*" -> "cb2077"
+3. **PTAT_FILENAME_PREFIX_TO_SLUG**: "Cyberpunk*" -> "cb2077" (manual PTAT filenames)
+4. **Automation PTAT prefixes**: "ptat_cyberpunk-2077" -> "cb2077" (automation filenames like `ptat_<game-slug>_<ip>_<date>.csv`)
 
 Functions:
 - `capframex_to_slug(game_name, process_name)` - tries GameName (exact then partial), falls back to ProcessName
@@ -131,9 +217,13 @@ Functions:
 
 ### sku_map.py - SKU Mapping
 
-Two mapping tables:
-1. **PTAT_CPU_NAME_TO_SKU**: "NVL S" -> "nvl-s"
+Three mapping structures:
+1. **PTAT_CPU_NAME_TO_SKU**: "NVL S" -> "nvl-s", "RPL S" -> "rpl-s", etc.
 2. **FOLDER_FRAGMENT_TO_SKU**: folder name substring -> SKU
+3. **PTAT_SKU_TO_DASHBOARD_SKU**: Maps short PTAT SKU to dashboard SKU candidates
+   - "nvl-s" -> ["nvl-sk-28c", "nvl-sk-28c-bllc", "nvl-sk-52c", "nvl-sk-52c-bllc"]
+   - "arl-s" -> ["arl-s"], etc.
+   - Used by ingestion wizard to prompt user for exact dashboard SKU
 
 Functions:
 - `cpu_name_to_sku_id(cpu_name)` - exact match, then partial

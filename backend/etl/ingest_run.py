@@ -405,7 +405,7 @@ def prompt_build_type() -> tuple[str, str | None]:
 
 def ingest_single_run(run_path: Path, manifest: dict, build_id: str,
                       sku_id: str, build_type: str, parent_bkc: str | None,
-                      con) -> tuple[int, int]:
+                      con, experiment_label: str | None = None) -> tuple[int, int]:
     """
     Ingest traces from a single run folder (or a campaign game subfolder).
     Returns (success_count, fail_count).
@@ -471,6 +471,7 @@ def ingest_single_run(run_path: Path, manifest: dict, build_id: str,
             "game_slug": slug,
             "build_type": build_type,
             "parent_bkc": parent_bkc,
+            "experiment_label": experiment_label,
         }
 
         if fps:

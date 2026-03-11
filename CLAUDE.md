@@ -58,6 +58,7 @@ src/
     demo/        - DemoMode (fullscreen auto-cycling), DemoGameCardView
     overlay/     - GameOverlay (full-page modal with game switcher)
     system/      - SystemScopePanel (hierarchical telemetry tree, default unchecked)
+    ingestion/   - IngestionPage, SourceManager, RunExplorer, RunDetailPanel, Workbench, IngestionHistory
     layout/      - Sidebar (top nav)
     common/      - GameImage, DeltaBadge
 ```
@@ -65,17 +66,46 @@ src/
 ### Backend Structure
 ```
 backend/
-  main.py           - FastAPI app (12 endpoints + static file serving + TTL cache)
-  db.py             - DuckDB schema (game_summary, timeseries, system_scope)
+  main.py           - FastAPI app (endpoints + static file serving + TTL cache)
+  db.py             - DuckDB schema (game_summary, timeseries, system_scope, ingestion_sources, ingestion_log)
   parsers/
+    base.py         - BaseParser ABC (abstract interface for all parser plugins)
+    registry.py     - Auto-discovery plugin registry (pkgutil + fnmatch)
     ptat.py         - PTAT CSV -> per-core freq/temp/power/clip/cstate (all raw rows)
+    ptat_parser.py  - PTATParser plugin (wraps ptat.py for registry)
     capframex.py    - CapFrameX JSON -> FPS metrics + all frame times
+    capframex_parser.py - CapFrameXParser plugin (wraps capframex.py)
+    presentmon_parser.py - PresentMonParser plugin (wraps CSV frametimes)
     system_scope.py - System Scope JSON -> config tree
+    system_scope_parser.py - SystemScopeParser plugin (wraps system_scope.py)
     game_map.py     - Game name -> slug mapping
     sku_map.py      - CPU name string -> SKU ID mapping
+  ingestion/
+    __init__.py     - Package init
+    scanner.py      - Source scanning (raptor-x, gametraces, custom folder structures)
+    push.py         - Parse preview, conflict checking, DB write, marker files
+    routes.py       - 12 FastAPI endpoints under /api/ingestion/*
   etl/
     process_build.py - Entry point: discovers files, parses, merges, writes to DB
 ```
+
+### Parser Plugin System
+New parsers (e.g., EMON, SocWatch) just need to:
+1. Create `backend/parsers/my_parser.py`
+2. Subclass `BaseParser` from `backend/parsers/base.py`
+3. Implement: `name`, `key`, `file_patterns`, `chart_types`, `summary_fields`, `parse()`
+4. The registry auto-discovers it via `pkgutil.iter_modules`
+
+### Ingestion System (Mega-App)
+5-stage pipeline: **Sources -> Browse & View -> Workbench -> Review -> Push**
+- **Sources**: Managed directories (raptor-x automation runs, gametraces folders, custom)
+- **Browse & View**: Scan sources, explore run folders, view raw files inline
+- **Workbench**: Assemble builds by cherry-picking games from multiple runs/reruns
+- **Review**: Dry-run parse preview with validation (missing data, zero FPS, extreme temps)
+- **Push**: Write to DB with conflict resolution, ingestion markers, rollback support
+
+**Dual DB connections**: Read-only for dashboard queries, lazy-init writable for ingestion.
+**Theme**: Amber (#f59e0b) accent for ingestion UI (vs purple for dashboard).
 
 ## Programs & SKUs
 Programs are loaded from `Gametraces/<Program>/program.json` files at startup.
@@ -91,8 +121,15 @@ Programs are loaded from `Gametraces/<Program>/program.json` files at startup.
 
 Each SKU has `graphics` ("iGFX"|"dGFX") and optional `gpu` fields, shown as badges on cards.
 
-## ETL Command
+## ETL Commands
 ```bash
+# GUI ingestion wizard (preferred for automation runs):
+python -m backend.etl.ingest_gui
+# - Cherry-pick games from campaigns + single reruns
+# - Auto-detect SKU/build ID, configure BKC/experiment
+# - Tags runs with dashboard_ingestion.json markers
+
+# Manual build ingestion:
 python -m backend.etl.process_build --input "C:/path/to/build_folder" --sku nvl-sk-28c
 # --build is optional (auto-extracted from SystemScope JSON)
 # Build folder structure: PTAT_logs/*.csv + Presentmon_logs/*.json + *SystemScope*.json
@@ -100,6 +137,8 @@ python -m backend.etl.process_build --input "C:/path/to/build_folder" --sku nvl-
 ```
 
 ## API Endpoints
+
+### Dashboard APIs
 - `GET /api/programs` — dynamic program/SKU list from JSON manifests (cached)
 - `GET /api/builds?sku_id=` — available build IDs (cached)
 - `GET /api/summary?build_id=&sku_id=` — KPI metrics for all games (cached)
@@ -110,6 +149,20 @@ python -m backend.etl.process_build --input "C:/path/to/build_folder" --sku nvl-
 - `GET /api/compare` — side-by-side comparison
 - `POST /api/cache/clear` — invalidate TTL cache (call after ETL)
 - `GET /health` — health check
+
+### Ingestion APIs (`/api/ingestion/*`)
+- `GET /sources` — list saved ingestion sources
+- `POST /sources` — add new source (validates path exists)
+- `DELETE /sources/{source_id}` — remove a source
+- `POST /scan` — scan sources, return discovered runs with game counts
+- `GET /runs/files?path=` — list files in a run folder
+- `GET /runs/file?path=` — read a specific file (JSON/CSV/image/text)
+- `POST /parse-preview` — dry-run parsing with validation checks
+- `GET /conflicts?build_id=&sku_id=&game_slugs=` — check existing data
+- `POST /push` — parse and write to DB (clears cache, writes markers)
+- `GET /history` — list past ingestion log entries
+- `DELETE /history/{ingestion_id}/rollback` — rollback an ingestion batch
+- `GET /parsers` — list registered parser plugins
 
 ## Summary Metrics (game_summary table)
 Each game row includes: avg/max/min FPS, 1%/0.1% lows, frame times (avg/p95/p99), GPU/CPU active ms, IA/Pkg power (avg/max), Pkg temp (avg/max), P-core freq (avg/max/min), E-core freq (avg/max/min), core counts, throttling flags, system info.
@@ -159,15 +212,18 @@ New builds go under `Gametraces/<Program>/<SKU>/<Build Name>/`.
 - **DO NOT remove chart animations** without asking — user wants to keep Recharts animations on
 - **DB schema change** — new columns `min_p_core_mhz`, `max_e_core_mhz`, `min_e_core_mhz` added; requires DB recreation + re-ingestion
 - **No `--reload` on uvicorn** — removed due to Windows instability; restart backend manually after code changes
-- **DuckDB opened read-only** on backend (`read_only=True`)
+- **DuckDB single read-write connection** — one shared connection for both dashboard reads and ingestion writes (DuckDB cannot mix read_only modes in one process)
 
-## Current State (as of Feb 2026)
+## Current State (as of March 2026)
 - Branch: `real-NVL-wip`
 - 12 games ingested for `nvl-sk-28c` build `NVL-S-CONS-26.03.5.139` (WW08 BKC)
 - Also ingested: WW08 Baseline OOB build for same SKU
 - Games: AC Mirage, Wukong, Civ6, Cyberpunk 2077, F1 24, Far Cry 6, FFXIV, Hitman 3, HZD Remastered, RDR2, SOTR, Tiny Tina
 - All other SKUs have no real data yet
 - DemoMode hardcoded to `nvl-sk-28c` (best data availability)
+- **Ingestion mega-app**: Full 5-stage pipeline implemented (Sources → Browse → Workbench → Review → Push)
+- **Parser registry**: 4 plugins active (PTAT, PresentMon, CapFrameX, SystemScope), extensible for EMON/SocWatch
+- **Design docs**: `docs/plans/2026-03-08-ingestion-mega-app-design.md`, `docs/plans/2026-03-08-ingestion-mega-app-plan.md`
 - **Pending**: DB needs recreation to pick up new frequency min/max columns, then re-ingest all builds
 
 ## CSS Keyframe Animations

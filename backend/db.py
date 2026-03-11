@@ -142,6 +142,22 @@ def init_schema(db_path_or_con=None) -> None:
         )
     """)
 
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS discovered_runs (
+            run_path    TEXT PRIMARY KEY,
+            source_id   TEXT NOT NULL,
+            folder_mtime DOUBLE,
+            scanned_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            run_data    TEXT NOT NULL
+        )
+    """)
+
+    # Add notes column if it doesn't exist (migration)
+    try:
+        con.execute("ALTER TABLE game_summary ADD COLUMN notes TEXT")
+    except Exception:
+        pass  # Column already exists
+
     if owns_connection:
         con.close()
         print(f"  [DB] Schema initialised at {db_path}")
@@ -180,6 +196,7 @@ def upsert_summary(con: duckdb.DuckDBPyConnection, row: dict) -> None:
             throttling,
             cpu_brand, firmware, gpu, os, motherboard,
             build_type, parent_bkc, experiment_label,
+            notes,
             created_at
         ) VALUES (
             ?, ?, ?,
@@ -194,6 +211,7 @@ def upsert_summary(con: duckdb.DuckDBPyConnection, row: dict) -> None:
             ?,
             ?, ?, ?, ?, ?,
             ?, ?, ?,
+            ?,
             CURRENT_TIMESTAMP
         )
     """, [
@@ -213,16 +231,46 @@ def upsert_summary(con: duckdb.DuckDBPyConnection, row: dict) -> None:
         row.get("gpu", ""), row.get("os", ""), row.get("motherboard", ""),
         row.get("build_type", "bkc"), row.get("parent_bkc"),
         row.get("experiment_label"),
+        row.get("notes"),
     ])
 
 
 def upsert_timeseries(con: duckdb.DuckDBPyConnection, build_id: str, sku_id: str,
                       game_slug: str, chart_type: str, data: list) -> None:
-    """Insert or replace a timeseries row."""
+    """Insert or replace a timeseries row.
+
+    Includes a verify-after-write guard: DuckDB's primary key index can
+    develop ghost entries after DELETE operations (index says the row
+    exists but the data is gone).  INSERT OR REPLACE silently no-ops in
+    that case, so we verify the write landed and fall back to an explicit
+    DELETE + INSERT if it didn't.
+    """
+    data_json = json.dumps(data)
+    pk = [build_id, sku_id, game_slug, chart_type]
+
     con.execute("""
         INSERT OR REPLACE INTO timeseries (build_id, sku_id, game_slug, chart_type, data)
         VALUES (?, ?, ?, ?, ?)
-    """, [build_id, sku_id, game_slug, chart_type, json.dumps(data)])
+    """, pk + [data_json])
+
+    # Verify the write actually landed
+    row = con.execute(
+        "SELECT 1 FROM timeseries "
+        "WHERE build_id = ? AND sku_id = ? AND game_slug = ? AND chart_type = ?",
+        pk,
+    ).fetchone()
+
+    if row is None:
+        # Ghost index entry — force DELETE to clear stale index, then INSERT
+        con.execute(
+            "DELETE FROM timeseries "
+            "WHERE build_id = ? AND sku_id = ? AND game_slug = ? AND chart_type = ?",
+            pk,
+        )
+        con.execute("""
+            INSERT INTO timeseries (build_id, sku_id, game_slug, chart_type, data)
+            VALUES (?, ?, ?, ?, ?)
+        """, pk + [data_json])
 
 
 # ── Ingestion source management ──────────────────────────────────
@@ -313,4 +361,80 @@ def rollback_ingestion(con, ingestion_id: str) -> dict:
         [ingestion_id],
     )
 
+    # Force WAL checkpoint to keep primary-key indexes consistent with data
+    try:
+        con.execute("CHECKPOINT")
+    except Exception:
+        pass  # best-effort — non-critical if it fails
+
     return {"rolled_back": ingestion_id, "games": game_slugs}
+
+
+# ── Discovered runs cache ───────────────────────────────────────
+
+def list_cached_runs(con) -> list[dict]:
+    """Return all cached discovered runs."""
+    rows = con.execute(
+        "SELECT run_path, source_id, folder_mtime, scanned_at, run_data "
+        "FROM discovered_runs ORDER BY scanned_at DESC"
+    ).fetchall()
+    return [
+        {
+            "run_path": r[0],
+            "source_id": r[1],
+            "folder_mtime": r[2],
+            "scanned_at": str(r[3]) if r[3] else None,
+            "run_data": json.loads(r[4]),
+        }
+        for r in rows
+    ]
+
+
+def get_cached_runs_for_source(con, source_id: str) -> dict:
+    """Return cached runs for a source as {run_path: {mtime, scanned_at, run_data}}."""
+    rows = con.execute(
+        "SELECT run_path, folder_mtime, scanned_at, run_data "
+        "FROM discovered_runs WHERE source_id = ? ",
+        [source_id],
+    ).fetchall()
+    return {
+        r[0]: {
+            "folder_mtime": r[1],
+            "scanned_at": str(r[2]) if r[2] else None,
+            "run_data": json.loads(r[3]),
+        }
+        for r in rows
+    }
+
+
+def upsert_cached_run(con, run_path: str, source_id: str, folder_mtime: float, run_data: dict) -> None:
+    """Insert or update a cached run."""
+    con.execute(
+        "INSERT OR REPLACE INTO discovered_runs (run_path, source_id, folder_mtime, scanned_at, run_data) "
+        "VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)",
+        [run_path, source_id, folder_mtime, json.dumps(run_data)],
+    )
+
+
+def delete_cached_runs(con, run_paths: list[str]) -> None:
+    """Delete cached runs by path."""
+    if not run_paths:
+        return
+    placeholders = ", ".join("?" for _ in run_paths)
+    con.execute(f"DELETE FROM discovered_runs WHERE run_path IN ({placeholders})", run_paths)
+
+
+def delete_cached_runs_for_source(con, source_id: str) -> None:
+    """Delete all cached runs for a source."""
+    con.execute("DELETE FROM discovered_runs WHERE source_id = ?", [source_id])
+
+
+def get_cache_metadata(con) -> dict:
+    """Return cache summary: last_scanned timestamp and run count."""
+    row = con.execute(
+        "SELECT COUNT(*), MAX(scanned_at) FROM discovered_runs"
+    ).fetchone()
+    return {
+        "cached_runs": row[0] if row else 0,
+        "last_scanned": str(row[1]) if row and row[1] else None,
+    }

@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { Gauge, ArrowLeftRight, Layers, ChevronLeft, ChevronRight, Cpu, GitBranch, UploadCloud } from 'lucide-react';
+import React, { useMemo, useRef, useState, useCallback } from 'react';
+import { Gauge, ArrowLeftRight, Layers, ChevronLeft, ChevronRight, Cpu, GitBranch } from 'lucide-react';
 import { usePrograms, games } from '../../data';
 import BuildTree from './BuildTree';
 
@@ -211,10 +211,25 @@ export default function Sidebar({
             {/* Divider */}
             <div className="border-t border-white/5 mx-2" />
 
-            {/* Tools Section */}
+            {/* Tools Section — click "Tools" label 10 times to unlock ingestion */}
             <div className={`flex flex-col gap-0.5 px-2 py-2 ${collapsed ? 'items-center' : ''}`}>
                 {!collapsed && (
-                    <div className="text-[10px] text-slate-500 uppercase tracking-wider px-2 mb-1">Tools</div>
+                    <div
+                        onClick={() => {
+                            const now = Date.now();
+                            if (!window.__toolsTaps) window.__toolsTaps = [];
+                            window.__toolsTaps = window.__toolsTaps.filter(t => now - t < 3000);
+                            window.__toolsTaps.push(now);
+                            if (window.__toolsTaps.length >= 10) {
+                                window.__toolsTaps = [];
+                                const pw = prompt('Access key:');
+                                if (pw === 'cherry') navigate('/ingestion');
+                            }
+                        }}
+                        className="text-[10px] text-slate-500 uppercase tracking-wider px-2 mb-1 cursor-default select-none"
+                    >
+                        Tools
+                    </div>
                 )}
                 <button
                     onClick={() => navigate('/compare')}
@@ -232,24 +247,6 @@ export default function Sidebar({
                 >
                     <ArrowLeftRight size={16} className={location.pathname === '/compare' ? 'text-pink-500' : 'text-slate-500'} />
                     {!collapsed && <span className="text-xs font-medium">Compare</span>}
-                </button>
-
-                <button
-                    onClick={() => navigate('/ingestion')}
-                    className={`
-                        flex items-center gap-2 rounded-lg border-none cursor-pointer transition-all duration-200
-                        ${collapsed ? 'justify-center px-1 py-2' : 'px-2 py-1.5'}
-                        ${location.pathname === '/ingestion'
-                            ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-slate-50'
-                            : 'bg-transparent hover:bg-white/5 text-slate-400'}
-                    `}
-                    style={{
-                        borderLeft: !collapsed && location.pathname === '/ingestion' ? '3px solid #f59e0b' : '3px solid transparent'
-                    }}
-                    title={collapsed ? 'Ingest' : undefined}
-                >
-                    <UploadCloud size={16} className={location.pathname === '/ingestion' ? 'text-amber-500' : 'text-slate-500'} />
-                    {!collapsed && <span className="text-xs font-medium">Ingest</span>}
                 </button>
 
                 <button
@@ -288,6 +285,13 @@ export default function Sidebar({
                     {!collapsed && <span className="text-[9px] text-slate-500 uppercase ml-1">Builds</span>}
                 </div>
             </div>
+
+            {/* Credits */}
+            {!collapsed && (
+                <div className="px-3 pb-2 text-[9px] text-slate-600 text-center tracking-wide">
+                    built by <span className="text-slate-500">bhuyansa</span> & <span className="text-slate-500">shreyan1</span>
+                </div>
+            )}
         </nav>
     );
 }

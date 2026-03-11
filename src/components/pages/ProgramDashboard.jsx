@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, ArrowLeft, ArrowUpAZ, ArrowDownAZ, TrendingUp, TrendingDown, AlertTriangle } from 'lucide-react';
+import { Search, ArrowLeft, ArrowUpAZ, ArrowDownAZ, TrendingUp, TrendingDown, AlertTriangle, FlaskConical } from 'lucide-react';
 import { usePrograms, games } from '../../data';
 import { useGameData, useAvailableBuilds } from '../../hooks/useGameData';
+import { useBuildTree } from '../../hooks/useBuildTree';
 
 import { GameCard, SKUCard } from '../cards';
 import GameOverlay from '../overlay/GameOverlay';
+import MilestoneTimeline from '../common/MilestoneTimeline';
 
 
 export default function ProgramDashboard() {
@@ -57,13 +59,40 @@ export default function ProgramDashboard() {
     // Fetch real build IDs from API for this SKU
     const realBuilds = useAvailableBuilds(selectedSku?.id);
 
-    // Use first real build from API, or URL build param
-    const urlBuild = searchParams.get('build') || realBuilds[0] || '';
-    const effectiveBuildId = realBuilds.length > 0 ? realBuilds[0] : urlBuild;
+    // Use URL build param if valid, otherwise default to first available build
+    const urlBuild = searchParams.get('build');
+    const effectiveBuildId = (urlBuild && realBuilds.includes(urlBuild)) ? urlBuild : (realBuilds[0] || '');
     const selectedBuild = effectiveBuildId;
 
     // Real data from API — uses effectiveBuildId so it always matches the DB
     const { getMetrics, availableSlugs, loading: dataLoading } = useGameData(selectedSku?.id, effectiveBuildId);
+
+    // Build tree for experiment banner
+    const { tree: buildTree } = useBuildTree(selectedSku?.id);
+    const experimentInfo = useMemo(() => {
+        if (!buildTree || !selectedBuild) return null;
+        for (const bkc of buildTree) {
+            if (bkc.experiments) {
+                const exp = bkc.experiments.find(e => e.build_id === selectedBuild);
+                if (exp) return { name: exp.build_id, label: exp.label, parentBkc: bkc.build_id, notes: exp.notes };
+            }
+        }
+        return null;
+    }, [buildTree, selectedBuild]);
+
+    const buildNotes = useMemo(() => {
+        if (!buildTree || !selectedBuild) return null;
+        // Check if it's a BKC with notes
+        for (const bkc of buildTree) {
+            if (bkc.build_id === selectedBuild && bkc.notes) return bkc.notes;
+            // Check experiments
+            if (bkc.experiments) {
+                const exp = bkc.experiments.find(e => e.build_id === selectedBuild);
+                if (exp?.notes) return exp.notes;
+            }
+        }
+        return null;
+    }, [buildTree, selectedBuild]);
 
 
     // Ensure URL reflects valid state if params are missing
@@ -215,6 +244,41 @@ export default function ProgramDashboard() {
                 </div>
             </section>
 
+            {/* Milestone Timeline — hardcoded for NVL SK 28C, Beta milestone */}
+            {selectedSku?.id === 'nvl-sk-28c' && (
+              <section className="mb-6 px-6 py-4 rounded-xl bg-white/[0.02] border border-primary/10">
+                <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Program Milestone</div>
+                <MilestoneTimeline current="beta" />
+              </section>
+            )}
+
+            {/* Experiment Banner */}
+            {experimentInfo && (
+                <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                    <FlaskConical size={18} className="text-amber-400 flex-shrink-0" />
+                    <div className="text-sm">
+                        {experimentInfo.label && (
+                            <>
+                                <span className="text-amber-200 font-bold">{experimentInfo.label}</span>
+                                <span className="text-slate-500 mx-2">·</span>
+                            </>
+                        )}
+                        <span className="text-amber-300/80 font-medium">{experimentInfo.name}</span>
+                        <span className="text-slate-500 mx-2">·</span>
+                        <span className="text-slate-400">branched from</span>
+                        <span className="text-slate-300 font-medium ml-1.5">{experimentInfo.parentBkc}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Build Notes Banner */}
+            {buildNotes && (
+                <div className="mb-6 px-4 py-3 rounded-xl bg-slate-500/10 border border-slate-500/20">
+                    <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Build Notes</div>
+                    <div className="text-sm text-slate-300 whitespace-pre-wrap">{buildNotes}</div>
+                </div>
+            )}
+
             {/* Game Results */}
             <section
                 className="transition-all duration-500 ease-out"
@@ -287,7 +351,7 @@ export default function ProgramDashboard() {
                         if (!metrics) return null;
                         return (
                             <div
-                                key={game.id}
+                                key={`${game.id}-${selectedBuild}`}
                                 ref={el => gameRefs.current[game.id] = el}
                                 className="animate-[fadeSlideIn_0.4s_ease-out_both]"
                                 style={{ animationDelay: `${idx * 80}ms` }}

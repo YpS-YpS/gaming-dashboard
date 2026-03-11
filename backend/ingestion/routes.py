@@ -25,12 +25,14 @@ class AddSourceRequest(BaseModel):
 
 class ScanRequest(BaseModel):
     source_ids: list[str] | None = None
+    force: bool = False  # bypass incremental cache, do full rescan
 
 
 class GamePreviewItem(BaseModel):
     game_slug: str
     source_path: str
     source_type: str
+    manual_fps: float | None = None
 
 
 class ParsePreviewRequest(BaseModel):
@@ -42,6 +44,7 @@ class PushGameItem(BaseModel):
     source_path: str
     source_type: str
     conflict_resolution: str = "overwrite"  # "overwrite" | "skip"
+    manual_fps: float | None = None
 
 
 class PushRequest(BaseModel):
@@ -50,21 +53,22 @@ class PushRequest(BaseModel):
     build_type: str = "bkc"
     parent_bkc: str | None = None
     experiment_label: str | None = None
+    notes: str | None = None
     games: list[PushGameItem]
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _get_db_read(request: Request):
-    """Return the read DB connection from app state."""
+    """Return a cursor for the read DB connection from app state."""
     con = getattr(request.app.state, "db", None)
     if con is None:
         raise HTTPException(status_code=503, detail="Read database not available")
-    return con
+    return con.cursor()
 
 
 def _get_db_write(request: Request):
-    """Return the writable DB connection from app state, lazily initialising if needed."""
+    """Return a cursor for the writable DB connection (thread-safe)."""
     con = getattr(request.app.state, "db_write", None)
     if con is None:
         # Attempt lazy initialisation
@@ -72,7 +76,71 @@ def _get_db_write(request: Request):
         con = init_db_write()
     if con is None:
         raise HTTPException(status_code=503, detail="Writable database not available")
-    return con
+    return con.cursor()
+
+
+def _scan_source_incremental(source: dict, cached_map: dict) -> tuple[list[dict], dict]:
+    """
+    Scan a source incrementally.
+
+    If no folders changed since last scan, returns cached data.
+    If any folders are new/changed/removed, does a full rescan and updates cache.
+
+    cached_map: {folder_path: {folder_mtime, scanned_at, run_data}} from DB
+    Returns (runs, stats) where stats = {new: int, updated: int, cached: int}
+    """
+    source_path = source.get("path", "")
+
+    if not os.path.isdir(source_path):
+        return [], {"new": 0, "updated": 0, "cached": 0}
+
+    # List subfolders on disk and get their mtimes
+    disk_folders = {}
+    try:
+        for entry in os.listdir(source_path):
+            fp = os.path.join(source_path, entry)
+            if os.path.isdir(fp):
+                try:
+                    disk_folders[fp] = os.path.getmtime(fp)
+                except OSError:
+                    disk_folders[fp] = 0.0
+    except OSError:
+        return [], {"new": 0, "updated": 0, "cached": 0}
+
+    # Check if anything changed
+    new_folders = set()
+    changed_folders = set()
+
+    for fp, mtime in disk_folders.items():
+        cached = cached_map.get(fp)
+        if cached is None:
+            new_folders.add(fp)
+        elif cached["folder_mtime"] is None or mtime > cached["folder_mtime"]:
+            changed_folders.add(fp)
+
+    removed = set(cached_map.keys()) - set(disk_folders.keys())
+
+    # If nothing changed, return cached data
+    if not new_folders and not changed_folders and not removed:
+        runs = [entry["run_data"] for entry in cached_map.values()]
+        return runs, {"new": 0, "updated": 0, "cached": len(runs)}
+
+    # Something changed — do a full rescan of this source
+    fresh_runs = scan_source(source)
+
+    # Tag new runs
+    fresh_paths = set()
+    for run in fresh_runs:
+        fp = run.get("folder_path", "")
+        fresh_paths.add(fp)
+        if fp in new_folders:
+            run["_is_new"] = True
+
+    return fresh_runs, {
+        "new": len(new_folders & fresh_paths),
+        "updated": len(changed_folders & fresh_paths),
+        "cached": 0,
+    }
 
 
 # ── 1. GET /sources — list saved sources ─────────────────────────────────────
@@ -116,7 +184,34 @@ def delete_source(source_id: str, request: Request):
     try:
         con = _get_db_write(request)
         db.delete_source(con, source_id)
+        db.delete_cached_runs_for_source(con, source_id)
         return {"deleted": source_id}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── NEW: GET /runs — return cached runs ──────────────────────────────────
+
+@router.get("/runs")
+def get_cached_runs(request: Request):
+    """Return cached discovered runs from the database (no filesystem scan)."""
+    try:
+        con = _get_db_write(request)
+        cached = db.list_cached_runs(con)
+        runs = [entry["run_data"] for entry in cached]
+        # Sort newest first
+        runs.sort(key=lambda r: r.get("created_at", ""), reverse=True)
+        total_games = sum(r.get("game_count", 0) for r in runs)
+        meta = db.get_cache_metadata(con)
+        return {
+            "runs": runs,
+            "total_runs": len(runs),
+            "total_games": total_games,
+            "cached": True,
+            "last_scanned": meta["last_scanned"],
+        }
     except HTTPException:
         raise
     except Exception as e:
@@ -127,7 +222,7 @@ def delete_source(source_id: str, request: Request):
 
 @router.post("/scan")
 def scan_sources(body: ScanRequest, request: Request):
-    """Scan one or more sources and return discovered runs."""
+    """Scan sources incrementally — only rescans new or changed folders."""
     try:
         con = _get_db_write(request)
         all_sources = db.list_sources(con)
@@ -143,14 +238,45 @@ def scan_sources(body: ScanRequest, request: Request):
         sources = all_sources
 
     if not sources:
-        return {"runs": [], "errors": []}
+        return {"runs": [], "errors": [], "new_runs": 0, "updated_runs": 0}
 
     all_runs = []
     errors = []
+    new_count = 0
+    updated_count = 0
+
     for source in sources:
         try:
-            runs = scan_source(source)
+            cached_map = {}
+            if body.force:
+                # Force full rescan — scan first, then clear cache (safe if scan throws)
+                runs = scan_source(source)
+                db.delete_cached_runs_for_source(con, source["id"])
+                stats = {"new": len(runs), "updated": 0, "cached": 0}
+            else:
+                cached_map = db.get_cached_runs_for_source(con, source["id"])
+                runs, stats = _scan_source_incremental(source, cached_map)
+
+            # Update cache in DB
+            for run in runs:
+                folder_path = run.get("folder_path", "")
+                if folder_path:
+                    try:
+                        mtime = os.path.getmtime(folder_path)
+                    except OSError:
+                        mtime = 0.0
+                    db.upsert_cached_run(con, folder_path, source["id"], mtime, run)
+
+            # Remove stale entries (folders that no longer exist) — skip when force (cache was already cleared)
+            if not body.force:
+                current_paths = {r.get("folder_path", "") for r in runs}
+                stale_paths = [p for p in cached_map if p not in current_paths]
+                if stale_paths:
+                    db.delete_cached_runs(con, stale_paths)
+
             all_runs.extend(runs)
+            new_count += stats["new"]
+            updated_count += stats["updated"]
         except Exception as e:
             errors.append({"source_id": source["id"], "error": str(e)})
 
@@ -158,11 +284,16 @@ def scan_sources(body: ScanRequest, request: Request):
     all_runs.sort(key=lambda r: r.get("created_at", ""), reverse=True)
     total_games = sum(r.get("game_count", 0) for r in all_runs)
 
+    meta = db.get_cache_metadata(con)
+
     return {
         "runs": all_runs,
         "errors": errors,
         "total_runs": len(all_runs),
         "total_games": total_games,
+        "new_runs": new_count,
+        "updated_runs": updated_count,
+        "last_scanned": meta["last_scanned"],
     }
 
 
@@ -244,6 +375,7 @@ def push_data(body: PushRequest, request: Request):
             parent_bkc=body.parent_bkc,
             experiment_label=body.experiment_label,
             games=games,
+            notes=body.notes,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

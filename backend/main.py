@@ -105,49 +105,34 @@ def _load_programs() -> list[dict]:
 PROGRAMS = _load_programs()
 
 
-# ── DB connection (thread-safe via per-thread cursors) ────────────────────────
+# ── DB connection (single read-write, thread-safe via per-thread cursors) ─────
+# Single connection for both dashboard reads and ingestion writes.
+# DuckDB cannot mix read_only=True and read_only=False on the same file
+# in the same process, so we use one read-write connection for everything.
 _db_conn: duckdb.DuckDBPyConnection | None = None
 _db_lock = threading.Lock()
 
 def _init_db() -> duckdb.DuckDBPyConnection:
-    """Initialise the shared parent connection (called once)."""
+    """Initialise the shared parent connection (called once, read-write)."""
     global _db_conn
     with _db_lock:
         if _db_conn is None:
-            _db_conn = get_connection(DEFAULT_DB_PATH, read_only=True)
+            _db_conn = get_connection(DEFAULT_DB_PATH, read_only=False)
+            from . import db as _db_module
+            _db_module.init_schema(_db_conn)  # Ensure all tables exist
+            app.state.db_write = _db_conn
         return _db_conn
 
 def _get_db() -> duckdb.DuckDBPyConnection:
     """Return a thread-local cursor from the shared connection."""
     if not DEFAULT_DB_PATH.exists():
-        raise HTTPException(status_code=503, detail="Database not initialised. Run the ETL pipeline first.")
+        DEFAULT_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     parent = _init_db()
     return parent.cursor()
 
-
-# ── Writable connection for ingestion operations ─────────────────────────────
-_db_write_conn: duckdb.DuckDBPyConnection | None = None
-_db_write_lock = threading.Lock()
-
 def init_db_write() -> duckdb.DuckDBPyConnection | None:
-    """Lazily open a writable DB connection (called on first ingestion request)."""
-    global _db_write_conn
-    with _db_write_lock:
-        if _db_write_conn is not None:
-            return _db_write_conn
-        try:
-            from . import db as _db_module
-            _db_write_path = Path(__file__).parent / "data" / "gaming_dashboard.duckdb"
-            _db_write_path.parent.mkdir(parents=True, exist_ok=True)
-            _db_write_conn = duckdb.connect(str(_db_write_path), read_only=False)
-            _db_module.init_schema(_db_write_conn)  # Ensure ingestion tables exist
-            app.state.db_write = _db_write_conn
-            return _db_write_conn
-        except Exception as e:
-            print(f"Warning: Could not open writable DB: {e}")
-            return None
-
-app.state.db_write = None  # Will be lazily initialised by init_db_write()
+    """Return the shared connection (same as read — single connection model)."""
+    return _init_db()
 
 
 # ── Response cache (data only changes on ETL runs) ───────────────────────────
@@ -194,7 +179,7 @@ def clear_cache():
 
 @app.post("/api/db/release")
 def release_db():
-    """Close the DB connection so ETL tools can write. Call before ingestion."""
+    """Close the DB connection so external ETL tools can write. Call before external ingestion."""
     global _db_conn
     with _db_lock:
         if _db_conn is not None:
@@ -203,13 +188,14 @@ def release_db():
             except Exception:
                 pass
             _db_conn = None
+            app.state.db_write = None
     _invalidate_cache()
     return {"status": "released"}
 
 
 @app.post("/api/db/reacquire")
 def reacquire_db():
-    """Reopen the DB connection after ETL. Call after ingestion."""
+    """Reopen the DB connection after external ETL. Call after external ingestion."""
     global _db_conn
     with _db_lock:
         if _db_conn is not None:
@@ -218,6 +204,7 @@ def reacquire_db():
             except Exception:
                 pass
             _db_conn = None
+            app.state.db_write = None
     # Next _get_db() call will reinitialize
     _invalidate_cache()
     return {"status": "reacquired"}
@@ -280,6 +267,7 @@ def get_build_tree(sku_id: Optional[str] = Query(None)):
                    COALESCE(build_type, 'bkc') as build_type,
                    parent_bkc,
                    experiment_label,
+                   MAX(notes) as notes,
                    COUNT(DISTINCT game_slug) as game_count
             FROM game_summary
         """
@@ -295,19 +283,21 @@ def get_build_tree(sku_id: Optional[str] = Query(None)):
         bkc_map = {}
         experiments = []
 
-        for build_id_val, build_type, parent_bkc, exp_label, game_count in rows:
-            if build_type == "experiment" and parent_bkc:
+        for build_id_val, build_type, parent_bkc, exp_label, notes, game_count in rows:
+            if (build_type or "").lower() == "experiment" and parent_bkc:
                 experiments.append({
                     "build_id": build_id_val,
                     "game_count": game_count,
                     "parent_bkc": parent_bkc,
                     "label": exp_label,
+                    "notes": notes,
                 })
             else:
                 bkc_map[build_id_val] = {
                     "build_id": build_id_val,
                     "type": "bkc",
                     "game_count": game_count,
+                    "notes": notes,
                     "experiments": [],
                 }
 
@@ -317,6 +307,7 @@ def get_build_tree(sku_id: Optional[str] = Query(None)):
             exp_node = {
                 "build_id": exp["build_id"],
                 "game_count": exp["game_count"],
+                "notes": exp.get("notes"),
             }
             if exp.get("label"):
                 exp_node["label"] = exp["label"]
@@ -329,6 +320,7 @@ def get_build_tree(sku_id: Optional[str] = Query(None)):
                     "game_count": exp["game_count"],
                     "parent_bkc": parent,
                     "label": exp.get("label"),
+                    "notes": exp.get("notes"),
                     "experiments": [],
                 }
 
