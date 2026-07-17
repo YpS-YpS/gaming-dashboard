@@ -1,0 +1,431 @@
+{
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_Assassin's-Creed-Mirage": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\Assassin's-Creed-Mirage",
+    "game": "Assassin's-Creed-Mirage",
+    "ingested_at": "2026-03-08T14:48:19.143651",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "ac-mirage"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_Black-Myth-Wukong": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\Black-Myth-Wukong",
+    "game": "Black-Myth-Wukong",
+    "ingested_at": "2026-03-08T14:48:20.503167",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "wukong"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_Cyberpunk-2077": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\Cyberpunk-2077",
+    "game": "Cyberpunk-2077",
+    "ingested_at": "2026-03-08T14:48:21.635824",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "cb2077"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_F1-24": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\F1-24",
+    "game": "F1-24",
+    "ingested_at": "2026-03-08T14:48:25.193765",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "f1-24"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_Far-Cry-6": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\Far-Cry-6",
+    "game": "Far-Cry-6",
+    "ingested_at": "2026-03-08T14:48:25.897954",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "far-cry-6"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_HITMAN-3--Dubai": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\HITMAN-3--Dubai",
+    "game": "HITMAN-3--Dubai",
+    "ingested_at": "2026-03-08T14:48:26.676836",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "hitman3"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_Horizon-Zero-Dawn-Remastered": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\Horizon-Zero-Dawn-Remastered",
+    "game": "Horizon-Zero-Dawn-Remastered",
+    "ingested_at": "2026-03-08T14:48:28.347427",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "hzd"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_Red-Dead-Redemption-2": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\Red-Dead-Redemption-2",
+    "game": "Red-Dead-Redemption-2",
+    "ingested_at": "2026-03-08T14:48:31.571128",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "rdr2"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_Shadow-of-the-Tomb-Raider": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\Shadow-of-the-Tomb-Raider",
+    "game": "Shadow-of-the-Tomb-Raider",
+    "ingested_at": "2026-03-08T14:48:33.487851",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "sotr"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_Sid-Meier's-Civilization-VI": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\Sid-Meier's-Civilization-VI",
+    "game": "Sid-Meier's-Civilization-VI",
+    "ingested_at": "2026-03-08T14:48:37.359534",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "civ6"
+    ]
+  },
+  "cbf40382-584a-4e48-9ce9-f7ebdc5d54de_Tiny-Tina-Wonderlands": {
+    "folder": "2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_133134_campaign_ACM-BMW-C2-+9_high-1080p_0000_192-168-0-106\\Tiny-Tina-Wonderlands",
+    "game": "Tiny-Tina-Wonderlands",
+    "ingested_at": "2026-03-08T14:48:38.848717",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "tiny-tina"
+    ]
+  },
+  "4c0474d4-b451-4d2f-9b5d-930ea8171453_Final Fantasy XIV: Dawntrail": {
+    "folder": "2026-03-06_151120_single_Final-Fantasy-XIV-Dawntrail_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-06_151120_single_Final-Fantasy-XIV-Dawntrail_high-1080p_0000_192-168-0-106",
+    "game": "Final Fantasy XIV: Dawntrail",
+    "ingested_at": "2026-03-08T14:48:42.686627",
+    "build_id": "24C-NVLSFWR1.R00.3080.D89.2602241342",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "ffxiv"
+    ]
+  },
+  "aa1c228b-dcef-4317-8711-4af549217846_Assassin's-Creed-Mirage": {
+    "folder": "2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106\\Assassin's-Creed-Mirage",
+    "game": "Assassin's-Creed-Mirage",
+    "ingested_at": "2026-03-08T14:55:21.612716",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "ac-mirage"
+    ]
+  },
+  "aa1c228b-dcef-4317-8711-4af549217846_Black-Myth-Wukong": {
+    "folder": "2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106\\Black-Myth-Wukong",
+    "game": "Black-Myth-Wukong",
+    "ingested_at": "2026-03-08T14:55:22.935666",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "wukong"
+    ]
+  },
+  "aa1c228b-dcef-4317-8711-4af549217846_Cyberpunk-2077": {
+    "folder": "2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106\\Cyberpunk-2077",
+    "game": "Cyberpunk-2077",
+    "ingested_at": "2026-03-08T14:55:23.896567",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "cb2077"
+    ]
+  },
+  "aa1c228b-dcef-4317-8711-4af549217846_F1-24": {
+    "folder": "2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106\\F1-24",
+    "game": "F1-24",
+    "ingested_at": "2026-03-08T14:55:28.142632",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "f1-24"
+    ]
+  },
+  "aa1c228b-dcef-4317-8711-4af549217846_Far-Cry-6": {
+    "folder": "2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106\\Far-Cry-6",
+    "game": "Far-Cry-6",
+    "ingested_at": "2026-03-08T14:55:28.949887",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "far-cry-6"
+    ]
+  },
+  "aa1c228b-dcef-4317-8711-4af549217846_HITMAN-3": {
+    "folder": "2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106\\HITMAN-3",
+    "game": "HITMAN-3",
+    "ingested_at": "2026-03-08T14:55:29.829385",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "hitman3"
+    ]
+  },
+  "aa1c228b-dcef-4317-8711-4af549217846_Horizon-Zero-Dawn-Remastered": {
+    "folder": "2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106\\Horizon-Zero-Dawn-Remastered",
+    "game": "Horizon-Zero-Dawn-Remastered",
+    "ingested_at": "2026-03-08T14:55:31.145751",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "hzd"
+    ]
+  },
+  "aa1c228b-dcef-4317-8711-4af549217846_Shadow-of-the-Tomb-Raider": {
+    "folder": "2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106\\Shadow-of-the-Tomb-Raider",
+    "game": "Shadow-of-the-Tomb-Raider",
+    "ingested_at": "2026-03-08T14:55:32.575297",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "sotr"
+    ]
+  },
+  "aa1c228b-dcef-4317-8711-4af549217846_Tiny-Tina-Wonderlands": {
+    "folder": "2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-01_ACM-BMW-C2-+6_122957_192-168-0-106\\Tiny-Tina-Wonderlands",
+    "game": "Tiny-Tina-Wonderlands",
+    "ingested_at": "2026-03-08T14:55:34.969166",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "tiny-tina"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_Assassin's-Creed-Mirage": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\Assassin's-Creed-Mirage",
+    "game": "Assassin's-Creed-Mirage",
+    "ingested_at": "2026-03-08T14:55:36.405270",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "ac-mirage"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_Black-Myth-Wukong": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\Black-Myth-Wukong",
+    "game": "Black-Myth-Wukong",
+    "ingested_at": "2026-03-08T14:55:37.872747",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "wukong"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_Cyberpunk-2077": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\Cyberpunk-2077",
+    "game": "Cyberpunk-2077",
+    "ingested_at": "2026-03-08T14:55:39.195256",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "cb2077"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_F1-24": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\F1-24",
+    "game": "F1-24",
+    "ingested_at": "2026-03-08T14:55:43.506814",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "f1-24"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_HITMAN-3--Dubai": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\HITMAN-3--Dubai",
+    "game": "HITMAN-3--Dubai",
+    "ingested_at": "2026-03-08T14:55:44.583312",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "hitman3"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_Horizon-Zero-Dawn-Remastered": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\Horizon-Zero-Dawn-Remastered",
+    "game": "Horizon-Zero-Dawn-Remastered",
+    "ingested_at": "2026-03-08T14:55:46.339072",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "hzd"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_Red-Dead-Redemption-2": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\Red-Dead-Redemption-2",
+    "game": "Red-Dead-Redemption-2",
+    "ingested_at": "2026-03-08T14:55:50.326768",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "rdr2"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_Shadow-of-the-Tomb-Raider": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\Shadow-of-the-Tomb-Raider",
+    "game": "Shadow-of-the-Tomb-Raider",
+    "ingested_at": "2026-03-08T14:55:52.326591",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "sotr"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_Sid-Meier's-Civilization-VI": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\Sid-Meier's-Civilization-VI",
+    "game": "Sid-Meier's-Civilization-VI",
+    "ingested_at": "2026-03-08T14:55:56.129352",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "civ6"
+    ]
+  },
+  "d9798df0-63aa-4928-97b7-88470420abcd_Tiny-Tina-Wonderlands": {
+    "folder": "2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-04_101832_campaign_ACM-BMW-C2-+10_high-1080p_0000_192-168-0-106\\Tiny-Tina-Wonderlands",
+    "game": "Tiny-Tina-Wonderlands",
+    "ingested_at": "2026-03-08T14:55:57.744153",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "tiny-tina"
+    ]
+  },
+  "50a6489d-23a0-49ca-b958-c37dd4dfb598_Far Cry 6": {
+    "folder": "2026-03-05_040910_single_Far-Cry-6_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_040910_single_Far-Cry-6_high-1080p_0000_192-168-0-106",
+    "game": "Far Cry 6",
+    "ingested_at": "2026-03-08T14:55:58.660165",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "far-cry-6"
+    ]
+  },
+  "297a6bde-0ed9-4124-a61d-ad4f2a831ab6_Final Fantasy XIV: Dawntrail": {
+    "folder": "2026-03-05_120834_single_Final-Fantasy-XIV-Dawntrail_high-1080p_0000_192-168-0-106",
+    "game_folder": "C:\\Users\\Local_Admin\\Documents\\Raptor-X\\rpx-core\\logs\\runs\\2026-03-05_120834_single_Final-Fantasy-XIV-Dawntrail_high-1080p_0000_192-168-0-106",
+    "game": "Final Fantasy XIV: Dawntrail",
+    "ingested_at": "2026-03-08T14:56:03.084263",
+    "build_id": "NVLSFWR1.R00.3051.D85.2601281550",
+    "sku_id": "nvl-sk-28c",
+    "build_type": "experiment",
+    "games_success": 1,
+    "game_slugs": [
+      "ffxiv"
+    ]
+  }
+}
